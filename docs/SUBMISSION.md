@@ -14,6 +14,8 @@ Form is a private fitness diary for recording strength training, nutrition and d
 
 The public HTTPS application was independently tested without a local app server. It is ready to demonstrate with a confirmed account. Before demonstrating new-account registration, complete real inbox confirmation after the provider rate limit resets; configure custom SMTP for arbitrary assessor inboxes. Private repository access must be granted to the assessor separately if required.
 
+The user selected existing authorized accounts for the demonstration, so custom SMTP and arbitrary assessor registration are outside the chosen demonstration setup. The existing approved account still needs normal inbox confirmation; a follow-up check confirmed the built-in provider's project-wide limit is two emails per hour. No email-security or rate-limit setting was relaxed, and no existing account was administratively confirmed.
+
 ## Implemented features
 
 - Email/password signup with email confirmation, login, cookie/session refresh, current-device logout, protected diary routes and private per-user access.

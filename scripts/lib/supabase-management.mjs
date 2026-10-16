@@ -89,6 +89,7 @@ export async function readAuthConfiguration() {
     passwordRequiredCharacters: settings.password_required_characters,
     passwordHibpEnabled: settings.password_hibp_enabled,
     customSmtpConfigured: Boolean(settings.smtp_host),
+    emailRateLimitPerHour: settings.rate_limit_email_sent,
     confirmationTemplateUsesTokenHash: String(
       settings.mailer_templates_confirmation_content ?? "",
     ).includes(".TokenHash"),
