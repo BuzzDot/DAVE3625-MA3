@@ -1,6 +1,6 @@
 # Form architecture
 
-Status: Phase 5 deployed, October 16, 2026, https://form-dave3625-ma3.vercel.app (release `e0441a1`). Workouts, nutrition, health, calendar and dashboard passed independent production API/browser acceptance. Migrations 001-009 are preserved; all 27 tables retain RLS and 35 policies. Fifteen authenticated-only invoker RPCs cover diary, planning and fulfillment. Public signup/email confirmation was verified in Phase 2; real production inbox confirmation remains outstanding due to email-service rate limits. Generated-link auth regression passed on localhost and production. See `NUTRITION.md` for intake/import rules and `HEALTH-CALENDAR.md` for health, recurrence and timezone semantics.
+Status: Phase 5 deployed, October 16, 2026, https://form-dave3625-ma3.vercel.app (corrected release `3cc9c25`). Workouts, nutrition, health, calendar and dashboard passed independent production API/browser acceptance. Migrations 001-009 are preserved; all 27 tables retain RLS and 35 policies. Fifteen authenticated-only invoker RPCs cover diary, planning and fulfillment. Public signup/email confirmation was verified in Phase 2; production inbox confirmation requires a manual retest after the callback correction. Dedicated generated-link auth regression passed locally and on production desktop/mobile, separately from inbox delivery. See `NUTRITION.md` for intake/import rules and `HEALTH-CALENDAR.md` for health, recurrence and timezone semantics.
 
 ## Application boundaries
 

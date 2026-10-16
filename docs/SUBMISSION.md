@@ -9,12 +9,14 @@ Form is a private fitness diary for recording strength training, nutrition and d
 - Source repository: [BuzzDot/DAVE3625-MA3](https://github.com/BuzzDot/DAVE3625-MA3), **private**, created and pushed with explicit approval. Invite the assessor if private access is required.
 - Vercel project: `DAVE3625 / form-dave3625-ma3`, Node.js 24, Next.js.
 - Live application: [Form on Vercel](https://form-dave3625-ma3.vercel.app).
-- Deployment status: **READY**, release `e0441a1`, deployment `dpl_H8vcNvn2etcNyjQbuFANQ7W2z5AH`. Deployed API/browser acceptance passed; real production inbox confirmation remains outstanding due to the email rate limit.
+- Deployment status: **READY**, corrected release `3cc9c25`, deployment `dpl_GkL3qZJ7PEVcgiPGvaEhLGn2UhgM`. Deployed API/browser acceptance and desktop/mobile confirmation regression passed. Real production inbox confirmation requires a fresh manual retest after the callback correction; email quotas still apply.
 - Database: existing hosted Supabase project, migrations 001–009 preserved. No database reset is part of deployment.
 
 The public HTTPS application was independently tested without a local app server. It is ready to demonstrate with a confirmed account. Before demonstrating new-account registration, complete real inbox confirmation after the provider rate limit resets; configure custom SMTP for arbitrary assessor inboxes. Private repository access must be granted to the assessor separately if required.
 
 The user selected existing authorized accounts for the demonstration, so custom SMTP and arbitrary assessor registration are outside the chosen demonstration setup. The existing approved account still needs normal inbox confirmation; a follow-up check confirmed the built-in provider's project-wide limit is two emails per hour. No email-security or rate-limit setting was relaxed, and no existing account was administratively confirmed.
+
+The confirmation correction passed 56 domain/PGlite tests, 23 UI tests, lint/typecheck/format/build, three independent hosted API scenarios and all 28 production browser cases. Dedicated generated-link regression also passed on desktop/mobile against the deployed release, including server-verified confirmation, rejected links, fresh-browser login and persistence. This supersedes the earlier callback implementation described in the original acceptance results; actual inbox confirmation remains a separate user-operated check, with exact steps in SETUP.md.
 
 ## Implemented features
 

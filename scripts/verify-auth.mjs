@@ -19,6 +19,10 @@ if (
 const run = randomUUID();
 const email = `form-auth-${run}@example.com`;
 const password = `Å!<>$\\\"' ${randomBytes(28).toString("base64url")}!`;
+const contextOptions =
+  process.env.FORM_AUTH_TEST_MOBILE === "1"
+    ? { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true }
+    : {};
 let admin,
   browser,
   id,
@@ -42,7 +46,7 @@ try {
   id = data.user.id;
   assert.equal(Boolean(data.user.email_confirmed_at), false);
   browser = await chromium.launch();
-  const context = await browser.newContext();
+  const context = await browser.newContext(contextOptions);
   const page = await context.newPage();
   step = "UTF-8 password validation";
   await page.goto(`${origin}/signup`);
@@ -62,13 +66,19 @@ try {
   );
   await context.close();
   step = "confirmation in a fresh browser context";
-  const fresh = await browser.newContext();
+  const fresh = await browser.newContext(contextOptions);
   const confirmed = await fresh.newPage();
   await confirmed.goto(data.properties.action_link);
   await expect(
     confirmed.getByRole("heading", { name: "Email confirmed.", exact: true }),
   ).toBeVisible();
   await expect(confirmed).toHaveURL(/\/auth\/confirm$/);
+  assert.equal(
+    await confirmed.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth,
+    ),
+    true,
+  );
   assert.equal(confirmed.url().includes("access_token"), false);
   assert.equal(confirmed.url().includes("refresh_token"), false);
   const { data: user } = await admin.auth.admin.getUserById(id);
