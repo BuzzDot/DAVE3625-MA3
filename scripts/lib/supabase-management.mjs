@@ -1,0 +1,107 @@
+// Explicit release tooling only. Never import this into application code.
+// Use the existing Supabase CLI authority only for its own Management API.
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
+import { homedir } from "node:os";
+import { target } from "./hosted-access.mjs";
+const execute = promisify(execFile);
+async function cliAccessToken() {
+  if (process.env.SUPABASE_ACCESS_TOKEN)
+    return process.env.SUPABASE_ACCESS_TOKEN;
+  if (process.platform === "win32") {
+    // Supabase CLI v2.72 stores raw UTF-8 bytes under this exact service/profile.
+    // Capture the helper's output in process memory, never in terminal/log output.
+    const code = String.raw`Add-Type -TypeDefinition @'
+using System;
+using System.Runtime.InteropServices;
+using System.Text;
+public static class FormSupabaseCredential {
+ [StructLayout(LayoutKind.Sequential,CharSet=CharSet.Unicode)] public struct Credential {
+  public uint Flags,Type; public string TargetName,Comment; public long LastWritten;
+  public uint Size; public IntPtr Blob; public uint Persist,AttributeCount;
+  public IntPtr Attributes; public string TargetAlias,UserName;
+ }
+ [DllImport("advapi32.dll",EntryPoint="CredReadW",CharSet=CharSet.Unicode,SetLastError=true)]
+ [return:MarshalAs(UnmanagedType.Bool)] static extern bool Read(string name,uint type,uint flags,out IntPtr credential);
+ [DllImport("advapi32.dll")] static extern void CredFree(IntPtr credential);
+ public static string Get() {
+  foreach(string name in new[]{"Supabase CLI:supabase","Supabase CLI:access-token"}){
+   IntPtr ptr; if(!Read(name,1,0,out ptr))continue;
+   try {var c=(Credential)Marshal.PtrToStructure(ptr,typeof(Credential));var data=new byte[c.Size];Marshal.Copy(c.Blob,data,0,data.Length);return Encoding.UTF8.GetString(data);}
+   finally {CredFree(ptr);}
+  } return "";
+ }
+}
+'@
+[Console]::Write([FormSupabaseCredential]::Get())`;
+    const result = await execute(
+      "powershell.exe",
+      ["-NoProfile", "-NonInteractive", "-Command", code],
+      { windowsHide: true },
+    );
+    if (/^sbp_(oauth_)?[a-f0-9]{40}$/.test(result.stdout.trim()))
+      return result.stdout.trim();
+  }
+  try {
+    return (
+      await readFile(join(homedir(), ".supabase/access-token"), "utf8")
+    ).trim();
+  } catch {
+    throw new Error(
+      "Existing Supabase CLI management authority could not be loaded. Configure auth URLs in the Supabase dashboard.",
+    );
+  }
+}
+async function request(patch) {
+  const { ref } = await target();
+  const token = await cliAccessToken();
+  const response = await fetch(
+    `https://api.supabase.com/v1/projects/${ref}/config/auth`,
+    {
+      method: patch ? "PATCH" : "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: patch ? JSON.stringify(patch) : undefined,
+      signal: AbortSignal.timeout(30000),
+    },
+  );
+  if (!response.ok)
+    throw new Error(
+      `Supabase auth configuration request failed (HTTP ${response.status}); credentials withheld.`,
+    );
+  return response.json();
+}
+export async function readAuthConfiguration() {
+  const settings = await request();
+  return {
+    site_url: settings.site_url,
+    uri_allow_list: settings.uri_allow_list,
+    signupEnabled: !settings.disable_signup,
+    emailConfirmationRequired: !settings.mailer_autoconfirm,
+    emailProviderEnabled: settings.external_email_enabled,
+  };
+}
+export async function configureProductionAuth(origin) {
+  const url = new URL(origin);
+  if (url.protocol !== "https:" || url.origin !== origin)
+    throw new Error("Use a plain HTTPS production origin.");
+  const current = await readAuthConfiguration();
+  const allowed = new Set(
+    String(current.uri_allow_list ?? "")
+      .split(",")
+      .map((v) => v.trim())
+      .filter(Boolean),
+  );
+  for (const callback of [
+    `${origin}/auth/callback`,
+    "http://localhost:3000/auth/callback",
+    "http://127.0.0.1:3000/auth/callback",
+  ])
+    allowed.add(callback);
+  await request({ site_url: origin, uri_allow_list: [...allowed].join(",") });
+  return readAuthConfiguration();
+}
