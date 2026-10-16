@@ -1,12 +1,12 @@
 # Deployment and acceptance
 
-## Prepared target
+## Deployed target
 
 - GitHub: [private repository BuzzDot/DAVE3625-MA3](https://github.com/BuzzDot/DAVE3625-MA3), created and pushed after explicit approval.
-- Vercel: `DAVE3625 / form-dave3625-ma3`; reserved production origin `https://form-dave3625-ma3.vercel.app`.
+- Vercel: `DAVE3625 / form-dave3625-ma3`; live production origin https://form-dave3625-ma3.vercel.app.
 - Framework/root: Next.js App Router at repository root; Node.js 24.x, `npm ci`, `npm run build`, Frankfurt (`fra1`). No static export.
 - Supabase: the existing linked hosted project, with migrations 001–009 retained. No reset or new database is needed.
-- Publication: explicitly approved, including necessary fixes and acceptance. The first cloud build failed because an unanchored `supabase` ignore also excluded app modules; `/supabase/` now excludes only root migrations. Corrective deployment and production acceptance are in progress.
+- Publication: explicitly approved, including necessary fixes and acceptance. Release `e0441a1` is READY in production, deployment `dpl_H8vcNvn2etcNyjQbuFANQ7W2z5AH`. The first cloud build failed because an unanchored `supabase` ignore also excluded app modules; `/supabase/` corrected the packaging and the cloud build passed.
 
 `vercel.json` disables automatic Git deployments. A Git push therefore does not constitute approval to publish an application release. CLI production deployment is a separate explicit step. The private personal GitHub repository is compatible with the selected workflow; the source need not be public for a public HTTPS app.
 
@@ -60,7 +60,13 @@ After approval:
 
 If a production defect requires a corrective redeployment, keep the change within the approved deployment task, rerun relevant checks, deploy and repeat the failed acceptance. If approval was limited to one immutable artifact, obtain approval for the replacement. Do not reset hosted data to fix a deployment.
 
-## Checks and known limits
+## Acceptance results and known limits
+
+On October 16, 2026, independent acceptance against the public HTTPS origin passed three hosted API scenarios and all 28 desktop/mobile browser cases, with no skips. No local server was used for those cases. Workouts/routines/sets/history/PRs, Norwegian foods and recipes/quantities/goals, health corrections/goals, recurring calendar activities and fulfillment, dashboard, empty accounts, timezone, record editing/deletion, session reload/reopening, logout, anonymous protection and cross-user isolation passed at the covered scope. All three disposable accounts were cleaned up.
+
+Separate auth regression also passed on production: strong-symbol password login, UTF-8 password limit, unconfirmed-login denial, confirmation in a fresh browser context, URL-fragment removal, password login/reload/logout and single-use/redirect protection. The generated-link test removed its dedicated account. It does not prove inbox delivery or a new public signup email. The approved inbox already belongs to an existing unconfirmed account, which was preserved; the real deployed resend returned an email rate-limit error. Real production inbox confirmation remains outstanding. After the provider limit resets, use the login page's resend option, open the newest email and log in. Custom SMTP is necessary for arbitrary assessor addresses.
+
+Final local checks passed lint, TypeScript, formatting, production build, 55 domain/PGlite tests, 16 UI tests and 25 native PostgreSQL tests. Hosted audit confirmed migrations 001-009, all 27 RLS tables, 35 policies, no private anonymous grants and 15 invoker-security authenticated-only RPCs. The tracked release source scan found no credentials/personal-email/artifact findings. Ten JavaScript assets served by the live login page were checked for the one non-public local environment value, with no matches. Browser security cases verified headers and inaccessible deployment/environment/script files. Vercel inspection reported READY; the inspected 15-minute runtime/error-request window returned zero error logs and zero HTTP 5xx records. These bounded checks do not promise future service availability.
 
 Run lint, TypeScript, formatting, domain/PGlite, UI, isolated native PostgreSQL, production build, hosted API/RLS audit and browser suites. Record local-with-hosted-database results separately from deployed-site results. Conditional missing-credential skips are not passing live tests.
 

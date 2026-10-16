@@ -1,6 +1,6 @@
 # Form architecture
 
-Status: Phase 5 deployment preparation, October 16, 2026. Workouts, nutrition, health, calendar and dashboard use real Supabase persistence. Migrations 001-009 are deployed without resets; all 27 tables retain RLS and 35 policies. Fifteen authenticated-only invoker RPCs cover diary, planning and fulfillment. Public signup/email confirmation was verified in Phase 2. See `NUTRITION.md` for intake/import rules and `HEALTH-CALENDAR.md` for health, recurrence and timezone semantics.
+Status: Phase 5 deployed, October 16, 2026, https://form-dave3625-ma3.vercel.app (release `e0441a1`). Workouts, nutrition, health, calendar and dashboard passed independent production API/browser acceptance. Migrations 001-009 are preserved; all 27 tables retain RLS and 35 policies. Fifteen authenticated-only invoker RPCs cover diary, planning and fulfillment. Public signup/email confirmation was verified in Phase 2; real production inbox confirmation remains outstanding due to email-service rate limits. Generated-link auth regression passed on localhost and production. See `NUTRITION.md` for intake/import rules and `HEALTH-CALENDAR.md` for health, recurrence and timezone semantics.
 
 ## Application boundaries
 

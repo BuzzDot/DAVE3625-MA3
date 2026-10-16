@@ -28,7 +28,7 @@ The workout, nutrition, health and calendar diaries use Supabase. Native SQL tes
    npm run dev
    ```
 
-4. Visit `http://localhost:3000/signup`. Use an email address and a password with 8–128 characters. Open the local email testing inbox printed by the CLI (normally Mailpit at `http://localhost:54324`), open the confirmation in the same browser, and log in. PKCE confirmation depends on the initiating browser's verifier cookie. If you opened the confirmation elsewhere and verification succeeded, log in manually in your original browser.
+4. Visit `http://localhost:3000/signup`. Use an email address and a unique password with at least eight characters and at most 72 UTF-8 bytes. Open the local email testing inbox printed by the CLI (normally Mailpit at `http://localhost:54324`), follow the newest confirmation, then log in with your password. Confirmation does not require the browser that initiated signup; the callback discards URL tokens rather than signing you in from the link.
 
 5. In Workouts, create a routine, add an exercise and intended sets, save it, start a workout, mark a set complete, and finish. Reload the record and sign in in a new browser context. Confirm that its sets appear in Workout history and Progress. A second account must not see or edit it.
 

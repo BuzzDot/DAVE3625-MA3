@@ -8,11 +8,11 @@ Form is a private fitness diary for recording strength training, nutrition and d
 
 - Source repository: [BuzzDot/DAVE3625-MA3](https://github.com/BuzzDot/DAVE3625-MA3), **private**, created and pushed with explicit approval. Invite the assessor if private access is required.
 - Vercel project: `DAVE3625 / form-dave3625-ma3`, Node.js 24, Next.js.
-- Reserved production domain: `https://form-dave3625-ma3.vercel.app`.
-- Deployment status: **approved; corrective deployment and acceptance in progress**. The first cloud build failed on an ignore-rule packaging error, now corrected. The reserved domain is not yet claimed as a verified live application.
+- Live application: [Form on Vercel](https://form-dave3625-ma3.vercel.app).
+- Deployment status: **READY**, release `e0441a1`, deployment `dpl_H8vcNvn2etcNyjQbuFANQ7W2z5AH`. Deployed API/browser acceptance passed; real production inbox confirmation remains outstanding due to the email rate limit.
 - Database: existing hosted Supabase project, migrations 001–009 preserved. No database reset is part of deployment.
 
-The final live URL, release commit and production acceptance results must be recorded here after an approved deployment. Local tests against hosted Supabase do not establish that the Vercel site works.
+The public HTTPS application was independently tested without a local app server. It is ready to demonstrate with a confirmed account. Before demonstrating new-account registration, complete real inbox confirmation after the provider rate limit resets; configure custom SMTP for arbitrary assessor inboxes. Private repository access must be granted to the assessor separately if required.
 
 ## Implemented features
 
@@ -66,6 +66,8 @@ For deployment acceptance, `npm run test:production` requires an explicit extern
 
 ## Results and remaining limits
 
-Pre-deployment checks passed lint, TypeScript, formatting and production build; initially 52 domain/PGlite tests (55 after auth corrections), 25 native PostgreSQL tests, 16 UI tests, three hosted API scenarios and 28 desktop/mobile browser cases. Source/privacy scanning, the production dependency audit and hosted RLS/grant audit passed at their stated scope. These browser tests used a local app with real hosted Supabase. Local auth regression also passed using a generated confirmation link, separately from inbox delivery. Production acceptance is in progress; no Vercel production features are claimed verified yet. See [PLAN.md](PLAN.md).
+Final local checks passed lint, TypeScript, formatting, production build, 55 domain/PGlite tests, 25 native PostgreSQL tests and 16 UI tests. Independent production acceptance passed three hosted API scenarios and all 28 desktop/mobile browser cases with no skips, covering the implemented diaries, calendar/dashboard, empty states, record edits/deletion, persistence and access restrictions. Separate production auth regression passed strong passwords, unconfirmed denial, fresh-browser confirmation, fragment removal, login/reload/logout and replay/redirect safety using a generated link. Disposable fixtures were removed. This generated-link result is not evidence of actual inbox delivery: the approved inbox already has an unconfirmed account and the production resend was rate-limited. That account/password were preserved.
+
+The release source/privacy scan found no findings; production dependencies have zero reported vulnerabilities. Hosted RLS/grant auditing passed with 27 tables, 35 policies and 15 authenticated-only invoker RPCs. Ten live login-page JavaScript assets contained none of the checked non-public local environment value. Browser cases verified security headers and denied environment/tooling files. The inspected Vercel log window had no runtime errors or HTTP 5xx records. See [DEPLOYMENT.md](DEPLOYMENT.md) for scope and reproduction commands.
 
 Recurring schedules are bounded to one year/366 occurrences. Complete personal histories are paginated rather than fully aggregated in SQL at scale. Password recovery, full offline sync, account export/deletion, public-program lifecycle and external wearable source overlap remain deferred. Resend confirmation is implemented. The free default email service restricts recipients to authorized project-team addresses and imposes low rate limits; configure custom SMTP before demonstrating arbitrary assessor signup. Development lint dependencies have a known advisory; the production dependency audit is separate. Vercel/Supabase plan limits and external-service availability apply.
