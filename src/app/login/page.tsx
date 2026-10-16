@@ -1,5 +1,9 @@
 import { AuthForm } from "@/components/auth-form";
 import { supabaseConfigured } from "@/lib/supabase/config";
+import {
+  confirmationMessage,
+  type ConfirmationStatus,
+} from "@/lib/confirmation";
 export default async function Page({
   searchParams,
 }: {
@@ -10,8 +14,17 @@ export default async function Page({
     <AuthForm
       mode="login"
       configured={supabaseConfigured()}
-      confirmationFailed={query.confirmation === "failed"}
-      confirmationReceived={query.confirmation === "received"}
+      confirmationFeedback={
+        query.confirmation
+          ? confirmationMessage(
+              (["expired", "invalid", "unavailable", "browser"].includes(
+                query.confirmation,
+              )
+                ? query.confirmation
+                : "invalid") as ConfirmationStatus,
+            )
+          : undefined
+      }
     />
   );
 }

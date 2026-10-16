@@ -33,7 +33,7 @@ try {
     email,
     password,
     options: {
-      redirectTo: `${origin}/auth/callback`,
+      redirectTo: `${origin}/auth/confirm`,
       data: { form_auth_verification: run },
     },
   });
@@ -65,7 +65,10 @@ try {
   const fresh = await browser.newContext();
   const confirmed = await fresh.newPage();
   await confirmed.goto(data.properties.action_link);
-  await expect(confirmed).toHaveURL(/\/login\?confirmation=received#?$/);
+  await expect(
+    confirmed.getByRole("heading", { name: "Email confirmed.", exact: true }),
+  ).toBeVisible();
+  await expect(confirmed).toHaveURL(/\/auth\/confirm$/);
   assert.equal(confirmed.url().includes("access_token"), false);
   assert.equal(confirmed.url().includes("refresh_token"), false);
   const { data: user } = await admin.auth.admin.getUserById(id);
@@ -88,11 +91,32 @@ try {
   await expect(confirmed).toHaveURL(/\/login$/);
   step = "single-use confirmation and redirect safety";
   await confirmed.goto(data.properties.action_link);
-  await expect(confirmed).toHaveURL(/\/login/);
+  await expect(
+    confirmed.getByRole("heading", {
+      name: "Confirmation needs attention.",
+      exact: true,
+    }),
+  ).toBeVisible();
+  await expect(confirmed.getByRole("alert").first()).toContainText(
+    /new confirmation/,
+  );
   await confirmed.goto(
     `${origin}/auth/callback?next=https://example.com#access_token=discard-me`,
   );
-  await expect(confirmed).toHaveURL(/\/login\?confirmation=received#?$/);
+  await expect(confirmed).toHaveURL(/\/auth\/confirm$/);
+  await expect(
+    confirmed.getByRole("heading", {
+      name: "Confirmation needs attention.",
+      exact: true,
+    }),
+  ).toBeVisible();
+  await confirmed.goto(
+    `${origin}/auth/callback?error=access_denied&error_code=otp_expired`,
+  );
+  await expect(confirmed).toHaveURL(/\/login\?confirmation=expired#?$/);
+  await expect(confirmed.getByRole("alert").first()).toContainText(
+    "Supabase rejected",
+  );
   await confirmed.goto(`${origin}/workouts`);
   await expect(confirmed).toHaveURL(/\/login/);
   console.log(

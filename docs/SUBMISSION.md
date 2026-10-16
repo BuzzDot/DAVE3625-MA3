@@ -52,6 +52,7 @@ For deployment acceptance, `npm run test:production` requires an explicit extern
 - Local signup feedback exposed a mismatch between the advertised password length and Supabase's 72-byte ceiling. Validation now handles UTF-8 correctly and accepts strong symbols without changing the password.
 - Confirmation depended on the signup browser's PKCE cookies. Signup now confirms email independently, discards implicit tokens and requires a normal password login; real-Auth regression tests verify a fresh browser and protected routes.
 - The first Vercel build revealed that the migration ignore rule also matched application modules. Anchoring it to the root preserves application source in the deployment.
+- A later real-email failure exposed incomplete provider-error handling. The confirmation landing page now verifies success with Supabase, distinguishes rejected links from browser-bound callback failures, and clears token-bearing URL fragments. Signup and resend share an explicit, allowlisted confirmation destination. Generated-link tests are still reported separately from real inbox testing.
 
 ## Demonstration checklist
 

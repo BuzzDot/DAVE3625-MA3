@@ -12,13 +12,11 @@ import { Card } from "@/components/ui/card";
 export function AuthForm({
   mode,
   configured,
-  confirmationFailed = false,
-  confirmationReceived = false,
+  confirmationFeedback,
 }: {
   mode: "login" | "signup";
   configured: boolean;
-  confirmationFailed?: boolean;
-  confirmationReceived?: boolean;
+  confirmationFeedback?: string;
 }) {
   const [state, action, pending] = useActionState(
     authenticate.bind(null, mode),
@@ -75,16 +73,10 @@ export function AuthForm({
           </p>
         )}
         <p role="alert" className="text-sm text-red-700">
-          {state.error ||
-            (confirmationFailed
-              ? "That confirmation link could not be completed here. Try logging in if your email is already confirmed, or request a new sign-up confirmation."
-              : "")}
+          {state.error || confirmationFeedback}
         </p>
         <p role="status" className="text-sm text-primary">
-          {state.message ||
-            (confirmationReceived
-              ? "Confirmation link received. Log in with your email and password. If the link has expired, request a new confirmation below."
-              : "")}
+          {state.message}
         </p>
         <Button
           className="w-full"

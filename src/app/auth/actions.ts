@@ -32,7 +32,7 @@ export async function authenticate(
     if (mode === "signup") {
       const { error } = await createRegistrationClient().auth.signUp({
         ...parsed.data,
-        options: { emailRedirectTo: `${siteUrl()}/auth/callback` },
+        options: { emailRedirectTo: `${siteUrl()}/auth/confirm` },
       });
       if (error)
         return {
@@ -67,16 +67,12 @@ export async function resendConfirmation(
     const { error } = await client.auth.resend({
       type: "signup",
       email: email.data,
-      options: { emailRedirectTo: `${siteUrl()}/auth/callback` },
+      options: { emailRedirectTo: `${siteUrl()}/auth/confirm` },
     });
     // Avoid disclosing whether an account exists or is already confirmed.
     if (
       error &&
-      [
-        "over_email_send_rate_limit",
-        "over_request_rate_limit",
-        "email_address_not_authorized",
-      ].includes(error.code ?? "")
+      !["user_not_found", "email_already_confirmed"].includes(error.code ?? "")
     )
       return { error: authErrorMessage(error.code, "resend") };
     return {

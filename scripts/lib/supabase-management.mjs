@@ -93,7 +93,50 @@ export async function readAuthConfiguration() {
     confirmationTemplateUsesTokenHash: String(
       settings.mailer_templates_confirmation_content ?? "",
     ).includes(".TokenHash"),
+    confirmationTemplateVariables:
+      String(settings.mailer_templates_confirmation_content ?? "").match(
+        /\{\{[^}]+\}\}/g,
+      ) ?? [],
+    confirmationTemplateIsDefault:
+      !settings.mailer_templates_confirmation_content,
   };
+}
+// Bounded, read-only diagnostics. Never select tokens, request bodies or URLs.
+export async function readConfirmationLogs(keysOnly = false) {
+  const { ref } = await target();
+  const endpoint = new URL(
+    `https://api.supabase.com/v1/projects/${ref}/analytics/endpoints/logs`,
+  );
+  endpoint.searchParams.set(
+    "iso_timestamp_start",
+    new Date(Date.now() - 3600000).toISOString(),
+  );
+  endpoint.searchParams.set("iso_timestamp_end", new Date().toISOString());
+  endpoint.searchParams.set(
+    "sql",
+    keysOnly
+      ? "select arrayJoin(mapKeys(log_attributes)) as key, count() as events from logs where source='auth_logs' group by key order by events desc limit 80"
+      : "select timestamp, log_attributes['path'] as path, log_attributes['error_code'] as error_code, log_attributes['status'] as status, log_attributes['error'] as error_summary from logs where source='auth_logs' and log_attributes['path'] in ('/verify','/resend') order by timestamp desc limit 30",
+  );
+  const response = await fetch(endpoint, {
+    headers: { Authorization: `Bearer ${await cliAccessToken()}` },
+    signal: AbortSignal.timeout(30000),
+  });
+  if (!response.ok)
+    throw new Error(
+      `Auth log inspection failed (HTTP ${response.status}); details withheld.`,
+    );
+  const data = await response.json();
+  if (Array.isArray(data.result))
+    for (const row of data.result) {
+      if (row.error_summary)
+        row.error_summary = String(row.error_summary)
+          .replace(/https?:\/\/\S+/g, "[URL]")
+          .replace(/[\w.%+-]+@[\w.-]+/g, "[email]")
+          .replace(/[A-Za-z0-9_-]{24,}/g, "[identifier]")
+          .slice(0, 500);
+    }
+  return data;
 }
 export async function configureProductionAuth(origin) {
   const url = new URL(origin);
@@ -108,8 +151,11 @@ export async function configureProductionAuth(origin) {
   );
   for (const callback of [
     `${origin}/auth/callback`,
+    `${origin}/auth/confirm`,
     "http://localhost:3000/auth/callback",
+    "http://localhost:3000/auth/confirm",
     "http://127.0.0.1:3000/auth/callback",
+    "http://127.0.0.1:3000/auth/confirm",
   ])
     allowed.add(callback);
   await request({ site_url: origin, uri_allow_list: [...allowed].join(",") });

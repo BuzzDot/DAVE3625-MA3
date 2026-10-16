@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { siteUrl, supabaseConfigured } from "@/lib/supabase/config";
+import { confirmationFailure } from "@/lib/confirmation";
 export async function GET(request: NextRequest) {
   if (!supabaseConfigured())
     return NextResponse.json(
@@ -17,6 +18,18 @@ export async function GET(request: NextRequest) {
       { status: 503, headers: { "Cache-Control": "no-store" } },
     );
   }
+  const headers = {
+    "Cache-Control": "no-store",
+    "Referrer-Policy": "no-referrer",
+  };
+  if (request.nextUrl.searchParams.has("error")) {
+    const failure = confirmationFailure(
+      request.nextUrl.searchParams.get("error_code") ?? undefined,
+    );
+    return NextResponse.redirect(`${origin}/login?confirmation=${failure}#`, {
+      headers,
+    });
+  }
   if (code) {
     const client = await createSupabaseServerClient();
     const { error } = await client.auth.exchangeCodeForSession(code);
@@ -28,12 +41,11 @@ export async function GET(request: NextRequest) {
         },
       });
   }
-  const result =
-    code || request.nextUrl.searchParams.has("error") ? "failed" : "received";
-  // An explicit empty fragment stops browsers inheriting the implicit tokens
-  // from Supabase's redirect. We never read or persist those tokens. A password
-  // sign-in is required before any private diary can be accessed.
-  return NextResponse.redirect(`${origin}/login?confirmation=${result}#`, {
-    headers: { "Cache-Control": "no-store", "Referrer-Policy": "no-referrer" },
-  });
+  if (code)
+    return NextResponse.redirect(`${origin}/login?confirmation=browser#`, {
+      headers,
+    });
+  // Preserve an implicit fragment only to our own confirmation page. Fragments
+  // never reach this server; the page clears and verifies them with Supabase.
+  return NextResponse.redirect(`${origin}/auth/confirm`, { headers });
 }
