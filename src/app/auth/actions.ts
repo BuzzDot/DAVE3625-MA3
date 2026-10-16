@@ -4,12 +4,10 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { siteUrl, supabaseConfigured } from "@/lib/supabase/config";
+import { authCredentials, authErrorMessage } from "@/lib/auth-validation";
+import { createRegistrationClient } from "@/lib/supabase/registration";
 
 export type AuthResult = { error?: string; message?: string };
-const credentials = z.object({
-  email: z.email().max(254),
-  password: z.string().min(8).max(128),
-});
 export async function authenticate(
   mode: "login" | "signup",
   _previous: AuthResult,
@@ -19,41 +17,75 @@ export async function authenticate(
     return {
       error: "Supabase is not configured. Follow the setup instructions.",
     };
-  const parsed = credentials.safeParse({
+  const parsed = authCredentials(mode).safeParse({
     email: form.get("email"),
     password: form.get("password"),
   });
-  if (!parsed.success || !["login", "signup"].includes(mode))
-    return { error: "Enter a valid email and a password of 8–128 characters." };
+  if (!["login", "signup"].includes(mode)) return { error: "Invalid request." };
+  if (!parsed.success)
+    return {
+      error:
+        parsed.error.issues[0]?.message ?? "Check your email and password.",
+    };
   const client = await createSupabaseServerClient();
   try {
     if (mode === "signup") {
-      const { error } = await client.auth.signUp({
+      const { error } = await createRegistrationClient().auth.signUp({
         ...parsed.data,
         options: { emailRedirectTo: `${siteUrl()}/auth/callback` },
       });
       if (error)
         return {
-          error:
-            "Sign-up could not be completed. Check your details or try again later.",
+          error: authErrorMessage(error.code, mode),
         };
       // Do not reveal whether an email address already exists.
       return {
         message:
-          "Check your email for confirmation, then log in. If confirmation is disabled on your local stack, you can log in now.",
+          "Check your email for confirmation. Open the newest link to confirm your account, then log in.",
       };
     }
     const { error } = await client.auth.signInWithPassword(parsed.data);
     if (error)
       return {
-        error:
-          "Unable to log in. Check your email, password, and email confirmation.",
+        error: authErrorMessage(error.code, mode),
       };
   } catch {
     return { error: "Authentication is unavailable. Please try again." };
   }
   revalidatePath("/", "layout");
   redirect("/workouts");
+}
+export async function resendConfirmation(
+  _previous: AuthResult,
+  form: FormData,
+): Promise<AuthResult> {
+  if (!supabaseConfigured()) return { error: "Supabase is not configured." };
+  const email = z.email().max(254).safeParse(form.get("email"));
+  if (!email.success) return { error: "Enter a valid email address." };
+  try {
+    const client = createRegistrationClient();
+    const { error } = await client.auth.resend({
+      type: "signup",
+      email: email.data,
+      options: { emailRedirectTo: `${siteUrl()}/auth/callback` },
+    });
+    // Avoid disclosing whether an account exists or is already confirmed.
+    if (
+      error &&
+      [
+        "over_email_send_rate_limit",
+        "over_request_rate_limit",
+        "email_address_not_authorized",
+      ].includes(error.code ?? "")
+    )
+      return { error: authErrorMessage(error.code, "resend") };
+    return {
+      message:
+        "If this address needs confirmation, a new email has been requested. Use the newest link. If already confirmed, log in.",
+    };
+  } catch {
+    return { error: "Authentication is unavailable. Please try again." };
+  }
 }
 export async function logout(_previous: AuthResult): Promise<AuthResult> {
   void _previous;

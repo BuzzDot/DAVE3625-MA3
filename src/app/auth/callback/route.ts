@@ -28,7 +28,12 @@ export async function GET(request: NextRequest) {
         },
       });
   }
-  return NextResponse.redirect(new URL("/login?confirmation=failed", origin), {
+  const result =
+    code || request.nextUrl.searchParams.has("error") ? "failed" : "received";
+  // An explicit empty fragment stops browsers inheriting the implicit tokens
+  // from Supabase's redirect. We never read or persist those tokens. A password
+  // sign-in is required before any private diary can be accessed.
+  return NextResponse.redirect(`${origin}/login?confirmation=${result}#`, {
     headers: { "Cache-Control": "no-store", "Referrer-Policy": "no-referrer" },
   });
 }

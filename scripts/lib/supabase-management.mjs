@@ -69,10 +69,12 @@ async function request(patch) {
       signal: AbortSignal.timeout(30000),
     },
   );
-  if (!response.ok)
+  if (!response.ok) {
+    const detail = await response.json().catch(() => ({}));
     throw new Error(
-      `Supabase auth configuration request failed (HTTP ${response.status}); credentials withheld.`,
+      `Supabase auth configuration request failed (HTTP ${response.status}); credentials withheld. ${String(detail.message ?? "").slice(0, 600)}`,
     );
+  }
   return response.json();
 }
 export async function readAuthConfiguration() {
@@ -83,6 +85,13 @@ export async function readAuthConfiguration() {
     signupEnabled: !settings.disable_signup,
     emailConfirmationRequired: !settings.mailer_autoconfirm,
     emailProviderEnabled: settings.external_email_enabled,
+    passwordMinLength: settings.password_min_length,
+    passwordRequiredCharacters: settings.password_required_characters,
+    passwordHibpEnabled: settings.password_hibp_enabled,
+    customSmtpConfigured: Boolean(settings.smtp_host),
+    confirmationTemplateUsesTokenHash: String(
+      settings.mailer_templates_confirmation_content ?? "",
+    ).includes(".TokenHash"),
   };
 }
 export async function configureProductionAuth(origin) {

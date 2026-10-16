@@ -5,7 +5,14 @@ const files = [
   ...new Set(
     execFileSync(
       "git",
-      ["ls-files", "--cached", "--others", "--exclude-standard", "-z"],
+      [
+        "ls-files",
+        "--cached",
+        ...(process.argv.includes("--tracked")
+          ? []
+          : ["--others", "--exclude-standard"]),
+        "-z",
+      ],
       { encoding: "utf8" },
     )
       .split("\0")
@@ -56,8 +63,9 @@ console.log(
     {
       candidateFiles: files.length,
       findings,
-      scope:
-        "Git-tracked and non-ignored untracked files; no secret values printed. Pattern scanning supplements manual review.",
+      scope: process.argv.includes("--tracked")
+        ? "Git-tracked release files only; untracked user tools excluded. No secret values printed."
+        : "Git-tracked and non-ignored untracked files; no secret values printed. Pattern scanning supplements manual review.",
     },
     null,
     2,

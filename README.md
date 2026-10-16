@@ -75,4 +75,4 @@ The initial audit reports no production vulnerabilities. The development lint ch
 
 ## Assignment deployment
 
-Vercel deployment is prepared and requires explicit publication approval. See [DEPLOYMENT.md](docs/DEPLOYMENT.md) for the release procedure and independent HTTPS acceptance tests, and [SUBMISSION.md](docs/SUBMISSION.md) for the assignment description, AI disclosure and demonstration checklist. The reserved production domain is not yet a verified deployment. Community, scanning and wearable synchronization remain outside this delivery.
+Private GitHub publication and Vercel deployment are approved and in progress. See [DEPLOYMENT.md](docs/DEPLOYMENT.md) for current release status and independent HTTPS acceptance tests, and [SUBMISSION.md](docs/SUBMISSION.md) for the assignment description, AI disclosure and demonstration checklist. Local auth regression covers confirmation in a fresh browser and strong-password login. Community, scanning and wearable synchronization remain outside this delivery.

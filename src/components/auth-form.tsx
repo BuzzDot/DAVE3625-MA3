@@ -1,17 +1,24 @@
 "use client";
 import Link from "next/link";
 import { useActionState } from "react";
-import { authenticate, logout, type AuthResult } from "@/app/auth/actions";
+import {
+  authenticate,
+  logout,
+  resendConfirmation,
+  type AuthResult,
+} from "@/app/auth/actions";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 export function AuthForm({
   mode,
   configured,
   confirmationFailed = false,
+  confirmationReceived = false,
 }: {
   mode: "login" | "signup";
   configured: boolean;
   confirmationFailed?: boolean;
+  confirmationReceived?: boolean;
 }) {
   const [state, action, pending] = useActionState(
     authenticate.bind(null, mode),
@@ -57,11 +64,16 @@ export function AuthForm({
               mode === "login" ? "current-password" : "new-password"
             }
             required
-            minLength={8}
-            maxLength={128}
+            minLength={mode === "signup" ? 8 : 1}
+            maxLength={mode === "signup" ? 72 : 1024}
           />
         </label>
-        <p className="text-xs text-muted-foreground">Use 8–128 characters.</p>
+        {mode === "signup" && (
+          <p className="text-xs text-muted-foreground">
+            Use a unique password of at least 8 characters, up to 72 bytes.
+            Symbols are welcome; accented letters and emoji use extra bytes.
+          </p>
+        )}
         <p role="alert" className="text-sm text-red-700">
           {state.error ||
             (confirmationFailed
@@ -69,7 +81,10 @@ export function AuthForm({
               : "")}
         </p>
         <p role="status" className="text-sm text-primary">
-          {state.message}
+          {state.message ||
+            (confirmationReceived
+              ? "Confirmation link received. Log in with your email and password. If the link has expired, request a new confirmation below."
+              : "")}
         </p>
         <Button
           className="w-full"
@@ -83,6 +98,7 @@ export function AuthForm({
               : "Create account"}
         </Button>
       </form>
+      {mode === "login" && configured && <ResendConfirmationForm />}
       <p className="mt-6 text-sm text-muted-foreground">
         {mode === "login" ? "New here?" : "Already have an account?"}{" "}
         <Link
@@ -93,6 +109,41 @@ export function AuthForm({
         </Link>
       </p>
     </Card>
+  );
+}
+function ResendConfirmationForm() {
+  const [state, action, pending] = useActionState(
+    resendConfirmation,
+    {} as AuthResult,
+  );
+  return (
+    <details className="mt-6 text-sm">
+      <summary className="min-h-11 cursor-pointer py-3 font-semibold text-primary">
+        Resend confirmation email
+      </summary>
+      <form action={action} className="space-y-3">
+        <label className="block">
+          Confirmation email
+          <input
+            className="mt-2"
+            name="email"
+            type="email"
+            autoComplete="email"
+            required
+            maxLength={254}
+          />
+        </label>
+        <Button variant="outline" type="submit" disabled={pending}>
+          {pending ? "Please wait…" : "Send confirmation"}
+        </Button>
+        <p role="alert" className="text-red-700">
+          {state.error}
+        </p>
+        <p role="status" className="text-primary">
+          {state.message}
+        </p>
+      </form>
+    </details>
   );
 }
 export function LogoutButton({ userId }: { userId: string }) {

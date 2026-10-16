@@ -2,11 +2,11 @@
 
 ## Prepared target
 
-- GitHub: private personal repository `BuzzDot/DAVE3625-MA3`, pending creation/push approval.
+- GitHub: [private repository BuzzDot/DAVE3625-MA3](https://github.com/BuzzDot/DAVE3625-MA3), created and pushed after explicit approval.
 - Vercel: `DAVE3625 / form-dave3625-ma3`; reserved production origin `https://form-dave3625-ma3.vercel.app`.
 - Framework/root: Next.js App Router at repository root; Node.js 24.x, `npm ci`, `npm run build`, Frankfurt (`fra1`). No static export.
 - Supabase: the existing linked hosted project, with migrations 001–009 retained. No reset or new database is needed.
-- Publication: pending explicit user approval. An empty Vercel project/domain reservation is not a deployed application.
+- Publication: explicitly approved, including necessary fixes and acceptance. The first cloud build failed because an unanchored `supabase` ignore also excluded app modules; `/supabase/` now excludes only root migrations. Corrective deployment and production acceptance are in progress.
 
 `vercel.json` disables automatic Git deployments. A Git push therefore does not constitute approval to publish an application release. CLI production deployment is a separate explicit step. The private personal GitHub repository is compatible with the selected workflow; the source need not be public for a public HTTPS app.
 
@@ -54,7 +54,7 @@ After approval:
    node scripts/verify-signup.mjs
    ```
 
-   Keep `FORM_TEST_BASE_URL` set to the public origin. The operator opens the real email within ten minutes. Passwords/tokens stay out of logs and files; only the newly created, marked verification account is removed. Opening PKCE confirmation in a different browser may require signing in after confirmation, as documented in SETUP. No administrator confirmation is used for this check.
+   Keep `FORM_TEST_BASE_URL` set to the public origin. The operator opens the real email within ten minutes. Passwords/tokens stay out of logs and files; only the newly created, marked verification account is removed. Existing accounts are left untouched. New signup confirms email independently of initiating-browser cookies, discards implicit tokens, and requires password login. No administrator confirmation is used for this check. The default mailer restricts recipients to authorized team addresses; arbitrary inboxes require custom SMTP.
 
 7. Inspect Vercel error logs without copying auth URLs, tokens or private records into documentation. Record observed errors and monitoring limits, update SUBMISSION/PLAN with the verified URL/commit/results, and commit the handoff. An ordinary documentation push does not auto-deploy because Git deployments are disabled.
 
@@ -67,6 +67,8 @@ Run lint, TypeScript, formatting, domain/PGlite, UI, isolated native PostgreSQL,
 The production dependency audit reports zero vulnerabilities at preparation time. Five high findings remain in the development-only ESLint/glob chain; npm's proposed automatic fix downgrades the framework lint configuration, so it is not applied. Keep this limitation visible and recheck upstream fixes. No dependencies were upgraded to unrelated majors for deployment.
 
 This prototype uses Hobby/free-tier services. No paid plan, custom domain, analytics drain or monitoring service has been purchased. Existing bounded recurrence/history loading, missing account recovery/export/deletion and deferred community/scanning/wearables remain documented limits.
+
+Local auth regression passed against real Supabase: strong-symbol password, UTF-8 limit, unconfirmed denial, fresh-browser confirmation, token-fragment removal, login/reload/logout and replay/redirect safety. `node scripts/verify-auth.mjs` uses a generated link and removes only its marked disposable account; this is not evidence of email delivery. Set `FORM_AUTH_TEST_URL` to the deployed HTTPS origin to repeat independently. The default free mailer rejected custom template changes; no template or security policy was changed. Hosted site URL/allowlist changes were applied while retaining localhost callbacks. Use `npm run audit:source -- --tracked` for the release files when unrelated user skill files exist untracked.
 
 ## Vercel agent setup
 

@@ -11,6 +11,7 @@ export default async function Page({
       mode="login"
       configured={supabaseConfigured()}
       confirmationFailed={query.confirmation === "failed"}
+      confirmationReceived={query.confirmation === "received"}
     />
   );
 }

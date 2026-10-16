@@ -6,10 +6,10 @@ Form is a private fitness diary for recording strength training, nutrition and d
 
 ## Submission links and release status
 
-- Source repository: prepared for a **private** `BuzzDot/DAVE3625-MA3` GitHub repository. Creation/push awaits explicit publication approval. Invite the assessor if private access is required.
+- Source repository: [BuzzDot/DAVE3625-MA3](https://github.com/BuzzDot/DAVE3625-MA3), **private**, created and pushed with explicit approval. Invite the assessor if private access is required.
 - Vercel project: `DAVE3625 / form-dave3625-ma3`, Node.js 24, Next.js.
 - Reserved production domain: `https://form-dave3625-ma3.vercel.app`.
-- Deployment status: **not deployed; awaiting explicit publication approval**. The reserved domain is not a verified live application URL.
+- Deployment status: **approved; corrective deployment and acceptance in progress**. The first cloud build failed on an ignore-rule packaging error, now corrected. The reserved domain is not yet claimed as a verified live application.
 - Database: existing hosted Supabase project, migrations 001–009 preserved. No database reset is part of deployment.
 
 The final live URL, release commit and production acceptance results must be recorded here after an approved deployment. Local tests against hosted Supabase do not establish that the Vercel site works.
@@ -47,6 +47,9 @@ For deployment acceptance, `npm run test:production` requires an explicit extern
 - Official food-feed validation found explicit-null energy values; normalization now preserves unknown values.
 - Scheduled workout acceptance exposed a small remote database clock lead; migration 009 accepts a bounded action-clock start instant so immediate completion remains valid.
 - Browser verification found a test cleanup using global logout; cleanup now ends only its own session.
+- Local signup feedback exposed a mismatch between the advertised password length and Supabase's 72-byte ceiling. Validation now handles UTF-8 correctly and accepts strong symbols without changing the password.
+- Confirmation depended on the signup browser's PKCE cookies. Signup now confirms email independently, discards implicit tokens and requires a normal password login; real-Auth regression tests verify a fresh browser and protected routes.
+- The first Vercel build revealed that the migration ignore rule also matched application modules. Anchoring it to the root preserves application source in the deployment.
 
 ## Demonstration checklist
 
@@ -63,6 +66,6 @@ For deployment acceptance, `npm run test:production` requires an explicit extern
 
 ## Results and remaining limits
 
-Pre-deployment checks passed lint, TypeScript, formatting and production build; 52 domain/PGlite tests, 25 native PostgreSQL tests, 16 UI tests, three hosted API scenarios and 28 desktop/mobile browser cases. Source/privacy scanning, the production dependency audit and the hosted RLS/grant audit passed at their stated scope. These browser tests used a local app with real hosted Supabase. Details are recorded in [PLAN.md](PLAN.md). Production acceptance is **pending deployment approval**; no Vercel production features are claimed verified yet.
+Pre-deployment checks passed lint, TypeScript, formatting and production build; initially 52 domain/PGlite tests (55 after auth corrections), 25 native PostgreSQL tests, 16 UI tests, three hosted API scenarios and 28 desktop/mobile browser cases. Source/privacy scanning, the production dependency audit and hosted RLS/grant audit passed at their stated scope. These browser tests used a local app with real hosted Supabase. Local auth regression also passed using a generated confirmation link, separately from inbox delivery. Production acceptance is in progress; no Vercel production features are claimed verified yet. See [PLAN.md](PLAN.md).
 
-Recurring schedules are bounded to one year/366 occurrences. Complete personal histories are paginated rather than fully aggregated in SQL at scale. Password recovery/resend, full offline sync, account export/deletion, public-program lifecycle and external wearable source overlap remain deferred. Development lint dependencies have a known advisory; the production dependency audit is separate. Vercel/Supabase plan limits, email deliverability and external-service availability apply to the demonstration.
+Recurring schedules are bounded to one year/366 occurrences. Complete personal histories are paginated rather than fully aggregated in SQL at scale. Password recovery, full offline sync, account export/deletion, public-program lifecycle and external wearable source overlap remain deferred. Resend confirmation is implemented. The free default email service restricts recipients to authorized project-team addresses and imposes low rate limits; configure custom SMTP before demonstrating arbitrary assessor signup. Development lint dependencies have a known advisory; the production dependency audit is separate. Vercel/Supabase plan limits and external-service availability apply.
