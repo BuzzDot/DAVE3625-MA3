@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { FoodInput } from "./types";
+import type { FoodInput, NutritionBasis, Portion } from "./types";
 
 export const barcodeSchema = z
   .string()
@@ -29,6 +29,69 @@ function nutrient(v: unknown, max: number): number | null {
     : null;
 }
 
+const unitInfo: Record<string, { basis: NutritionBasis; factor: number }> = {
+  g: { basis: "g", factor: 1 },
+  kg: { basis: "g", factor: 1000 },
+  mg: { basis: "g", factor: 0.001 },
+  ml: { basis: "ml", factor: 1 },
+  cl: { basis: "ml", factor: 10 },
+  dl: { basis: "ml", factor: 100 },
+  l: { basis: "ml", factor: 1000 },
+};
+function measures(value: unknown) {
+  return [
+    ...text(value, 200).matchAll(
+      /(\d+(?:[.,]\d+)?)\s*(kg|mg|ml|cl|dl|g|l)\b/gi,
+    ),
+  ].map((match) => {
+    const unit = unitInfo[match[2].toLowerCase()];
+    return {
+      basis: unit.basis,
+      amount: Number(match[1].replace(",", ".")) * unit.factor,
+    };
+  });
+}
+function measurementBasis(p: Record<string, unknown>): NutritionBasis | null {
+  const declared = text(p.product_quantity_unit, 10).toLowerCase();
+  if (declared && !unitInfo[declared]) return null;
+  const packageMeasures = measures(p.quantity);
+  const servingMeasures = measures(p.serving_size);
+  const servingUnit = text(p.serving_quantity_unit, 10).toLowerCase();
+  if (servingUnit && !unitInfo[servingUnit]) return null;
+  const evidence = new Set([
+    ...(declared ? [unitInfo[declared].basis] : []),
+    ...packageMeasures.map((m) => m.basis),
+    ...servingMeasures.map((m) => m.basis),
+    ...(servingUnit ? [unitInfo[servingUnit].basis] : []),
+  ]);
+  if (evidence.size !== 1) return null;
+  const basis = [...evidence][0];
+  const categories = Array.isArray(p.categories_tags) ? p.categories_tags : [];
+  // Taxonomy alone (or a product name such as "water") never supplies units.
+  // Serving-only volume evidence also needs the provider's beverage taxonomy.
+  if (
+    !declared &&
+    !packageMeasures.length &&
+    !(basis === "ml" && categories.includes("en:beverages"))
+  )
+    return null;
+  const per = text(p.nutrition_data_per, 20);
+  if (
+    !["100g", "100ml", "serving"].includes(per) ||
+    (per === "100ml" && basis !== "ml")
+  )
+    return null;
+  // OFF _100g is normalized per 100 g OR per 100 ml, including serving labels.
+  // A serving label without a measurable serving cannot establish that normalization.
+  if (
+    per === "serving" &&
+    servingMeasures.length !== 1 &&
+    !(servingUnit && nutrient(p.serving_quantity, 100000))
+  )
+    return null;
+  return basis;
+}
+
 export function normalizeBarcodeProduct(
   body: unknown,
   code: string,
@@ -55,28 +118,33 @@ export function normalizeBarcodeProduct(
       error:
         "This product has no usable name. Use Create food to enter the label manually.",
     };
-  const quantity = text(p.quantity, 100);
-  const unit = text(p.product_quantity_unit, 10).toLowerCase();
-  // OFF's legacy _100g fields can represent 100 ml for drinks. Require mass evidence.
-  const mass =
-    ["g", "kg", "mg"].includes(unit) ||
-    (!unit && /\d\s*(?:kg|mg|g)\b/i.test(quantity));
-  if (
-    !mass ||
-    (p.nutrition_data_per !== "100g" && p.nutrition_data_per !== "serving")
-  )
+  const basis = measurementBasis(p);
+  if (!basis || p.no_nutrition_data === "on")
     return {
       success: false,
       error:
-        "A gram-based nutrition label could not be confirmed. For liquids or unclear labels, use Create food with verified values per 100 g; 100 ml is not assumed to weigh 100 g.",
+        "The nutrition basis could not be confirmed as 100 g or 100 ml. Check the package and create a food with verified values and units; grams and milliliters are not interchangeable.",
     };
   const n = record(p.nutriments);
   const kj = nutrient(n["energy-kj_100g"], 8368);
   const brand = text(p.brands, 80);
-  const serving = text(p.serving_size, 100).match(
-    /^\s*(\d+(?:[.,]\d+)?)\s*g\s*$/i,
-  );
-  const grams = serving ? Number(serving[1].replace(",", ".")) : null;
+  const serving = measures(p.serving_size);
+  const labelAmount =
+    serving.length === 1 && serving[0].basis === basis
+      ? serving[0].amount
+      : null;
+  const sizes = basis === "ml" ? [250, 330, 500] : [];
+  const choices: Portion[] = sizes.map((ml) => ({
+    id: `volume-${ml}`,
+    label: `${ml} ml`,
+    ml,
+  }));
+  if (labelAmount && labelAmount <= 100000)
+    choices.unshift({
+      id: "label-serving",
+      label: `Label serving (${labelAmount} ${basis})`,
+      ...(basis === "ml" ? { ml: labelAmount } : { grams: labelAmount }),
+    });
   const url = `https://world.openfoodfacts.org/product/${providerCode.data}`;
   return {
     success: true,
@@ -84,23 +152,18 @@ export function normalizeBarcodeProduct(
       barcode: code,
       url,
       name: `${name}${brand ? ` (${brand})` : ""}`.slice(0, 200),
-      description: `Personal copy reviewed from Open Food Facts (ODbL). Barcode: ${code}. ${url}\nRetrieved: ${fetchedAt}. Check against the package; values may be incomplete.`,
+      description: `Personal copy reviewed from Open Food Facts (ODbL). Barcode: ${code}. ${url}\nRetrieved: ${fetchedAt}. Nutrition basis: per 100 ${basis} (OFF normalized _100g fields; label entry: ${text(p.nutrition_data_per, 20)}). Check against the package; values may be incomplete.`,
+      nutrition_basis: basis,
+      nutrients: {
+        sugars: { amount: nutrient(n.sugars_100g, 100), unit: "g" },
+      },
       kcal_per_100g:
         nutrient(n["energy-kcal_100g"], 2000) ??
         (kj === null ? null : Math.round((kj / 4.184) * 1000) / 1000),
       protein_per_100g: nutrient(n.proteins_100g, 100),
       carbs_per_100g: nutrient(n.carbohydrates_100g, 100),
       fat_per_100g: nutrient(n.fat_100g, 100),
-      portions:
-        grams && grams <= 100000
-          ? [
-              {
-                id: "label-serving",
-                label: `Label serving (${grams} g)`,
-                grams,
-              },
-            ]
-          : [],
+      portions: choices,
     },
   };
 }
@@ -114,7 +177,7 @@ export async function fetchBarcodeProduct(
     return { success: false, error: parsed.error.issues[0].message };
   const code = parsed.data;
   const fields =
-    "code,product_name,product_name_en,brands,quantity,product_quantity,product_quantity_unit,nutrition_data_per,serving_size,nutriments";
+    "code,product_name,product_name_en,brands,quantity,product_quantity,product_quantity_unit,categories_tags,nutrition_data_per,no_nutrition_data,serving_size,serving_quantity,serving_quantity_unit,nutriments";
   try {
     const response = await fetcher(
       `https://world.openfoodfacts.org/api/v3/product/${code}.json?fields=${fields}`,

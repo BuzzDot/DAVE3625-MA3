@@ -5,7 +5,12 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ConfirmDelete } from "@/components/training/confirm-delete";
 import { foodMacros, display } from "@/lib/nutrition/calculations";
-import { portions, type Food } from "@/lib/nutrition/types";
+import {
+  foodBasis,
+  portionAmount,
+  portions,
+  type Food,
+} from "@/lib/nutrition/types";
 import { MacroLine } from "./fields";
 export function FoodSearch({
   foods,
@@ -106,6 +111,9 @@ export function FoodSearch({
               {food.external_id ? `· ${food.external_id}` : ""}
             </p>
             <MacroLine values={foodMacros(food)} />
+            <p className="mt-1 text-xs text-muted-foreground">
+              Per 100 {foodBasis(food)}
+            </p>
             <details className="mt-2 text-xs text-muted-foreground">
               <summary className="min-h-11 cursor-pointer py-3">
                 Food details & nutrients
@@ -114,7 +122,8 @@ export function FoodSearch({
               <ul className="mt-2 space-y-1">
                 {portions(food.portions).map((p) => (
                   <li key={p.id}>
-                    {p.label}: {p.grams} g
+                    {p.label}: {portionAmount(p, foodBasis(food))}{" "}
+                    {foodBasis(food)}
                   </li>
                 ))}
               </ul>

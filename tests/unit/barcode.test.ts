@@ -78,7 +78,7 @@ test("barcode values preserve unknown versus zero, reject invalid nutrients and 
     {
       product: {
         ...product,
-        serving_size: "100 ml",
+        serving_size: "one spoon",
         nutriments: {
           "energy-kj_100g": 418.4,
           proteins_100g: 0,
@@ -97,9 +97,9 @@ test("barcode values preserve unknown versus zero, reject invalid nutrients and 
   assert.equal(result.product.fat_per_100g, null);
   assert.deepEqual(result.product.portions, []);
 });
-test("barcode lookup rejects volume/unclear bases, missing products and mismatched provider codes", () => {
+test("barcode lookup rejects unclear/conflicting bases, missing products and mismatched provider codes", () => {
   for (const p of [
-    { ...product, product_quantity_unit: "ml" },
+    { ...product, product_quantity_unit: "ml", serving_size: "15 g" },
     { ...product, product_quantity_unit: "" },
     { ...product, nutrition_data_per: "100ml" },
     { ...product, code: "00000000" },
@@ -111,6 +111,127 @@ test("barcode lookup rejects volume/unclear bases, missing products and mismatch
     code,
   );
   assert.equal(result.success, true);
+});
+test("regular energy drinks use OFF _100g values per 100 ml and retain volume servings", () => {
+  const result = normalizeBarcodeProduct(
+    {
+      product: {
+        ...product,
+        product_name: "Energy drink",
+        product_quantity_unit: "ml",
+        quantity: "250 ml",
+        categories_tags: ["en:beverages", "en:energy-drinks"],
+        serving_size: "1 can (250 ml)",
+        nutriments: {
+          "energy-kcal_100g": 46,
+          carbohydrates_100g: 11,
+          sugars_100g: 11,
+          proteins_100g: 0,
+          fat_100g: 0,
+        },
+      },
+    },
+    code,
+  );
+  assert.equal(result.success, true);
+  if (!result.success) return;
+  assert.equal(result.product.nutrition_basis, "ml");
+  assert.equal(result.product.kcal_per_100g, 46);
+  assert.equal(result.product.nutrients?.sugars.amount, 11);
+  assert.deepEqual(
+    result.product.portions.map((p) => p.ml),
+    [250, 250, 330, 500],
+  );
+  assert.ok(result.product.portions.every((p) => p.grams === undefined));
+  assert.match(result.product.description, /per 100 ml/);
+});
+for (const name of ["Sugar-free energy drink", "Water"])
+  test(`${name} preserves verified zero calories and zero sugars without inventing missing nutrients`, () => {
+    const result = normalizeBarcodeProduct(
+      {
+        product: {
+          ...product,
+          product_name: name,
+          product_quantity_unit: "ml",
+          quantity: "500 ml",
+          serving_size: "500 ml",
+          nutriments: {
+            "energy-kcal_100g": 0,
+            "energy-kj_100g": 4,
+            sugars_100g: 0,
+            carbohydrates_100g: 0,
+            fat_100g: 0,
+          },
+        },
+      },
+      code,
+    );
+    assert.equal(result.success, true);
+    if (!result.success) return;
+    assert.equal(result.product.kcal_per_100g, 0);
+    assert.equal(result.product.nutrients?.sugars.amount, 0);
+    assert.equal(result.product.protein_per_100g, null);
+  });
+test("liquid basis uses explicit dimensions, not names or beverage taxonomy alone", () => {
+  for (const override of [
+    {
+      product_quantity_unit: "",
+      quantity: "",
+      serving_size: "",
+      categories_tags: ["en:beverages"],
+    },
+    { quantity: "500 g" },
+    { serving_quantity_unit: "g" },
+    { product_quantity_unit: "fl oz" },
+    { nutrition_data_per: "prepared" },
+    {
+      nutrition_data_per: "serving",
+      serving_size: "one can",
+      serving_quantity_unit: undefined,
+    },
+    { no_nutrition_data: "on" },
+  ])
+    assert.equal(
+      normalizeBarcodeProduct(
+        {
+          product: {
+            ...product,
+            product_name: "Water",
+            product_quantity_unit: "ml",
+            quantity: "500 ml",
+            serving_size: "250 ml",
+            ...override,
+          },
+        },
+        code,
+      ).success,
+      false,
+    );
+  for (const override of [
+    { nutrition_data_per: "100ml" },
+    { nutrition_data_per: "serving" },
+    { product_quantity_unit: "", quantity: "0.33 l", serving_size: "33 cl" },
+    {
+      product_quantity_unit: "",
+      quantity: "",
+      categories_tags: ["en:beverages"],
+    },
+  ]) {
+    const result = normalizeBarcodeProduct(
+      {
+        product: {
+          ...product,
+          product_quantity_unit: "ml",
+          quantity: "330 ml",
+          serving_size: "330 ml",
+          ...override,
+        },
+      },
+      code,
+    );
+    assert.equal(result.success, true);
+    if (result.success) assert.equal(result.product.nutrition_basis, "ml");
+  }
 });
 test("barcode fetch uses a fixed provider, bounded timeout and cache, and handles provider failures", async () => {
   let calls = 0;

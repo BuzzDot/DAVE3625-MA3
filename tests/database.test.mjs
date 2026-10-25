@@ -29,6 +29,7 @@ const db = nativeUrl
 const alice = "11111111-1111-4111-8111-111111111111";
 const bob = "22222222-2222-4222-8222-222222222222";
 let exercise, food, routine, session, version;
+let preVolumeEntry;
 async function asUser(id) {
   await db.exec("reset role");
   await db.query("select set_config('request.jwt.claim.sub', $1, false)", [
@@ -61,6 +62,18 @@ before(async () => {
         "insert into public.nutrition_entries(id,owner_id,logged_at,local_date,meal_slot,name_snapshot,quantity,unit_snapshot,kcal_snapshot,protein_snapshot,carbs_snapshot,fat_snapshot) values('ab000000-0000-4000-8000-000000000001',$1,'2026-10-16T12:00:00Z','2026-10-16','lunch','Legacy manual entry',1,'plate',500,20,50,10)",
         [alice],
       );
+    if (filename.endsWith("_liquid_nutrition_basis.sql")) {
+      await asUser(alice);
+      const f = await row(
+        "insert into public.foods(owner_id,name,kcal_per_100g,protein_per_100g,carbs_per_100g,fat_per_100g) values($1,'Pre-volume solid',200,10,20,5) returning id",
+        [alice],
+      );
+      preVolumeEntry = await row(
+        "insert into public.nutrition_entries(owner_id,food_id,logged_at,local_date,meal_slot,name_snapshot,quantity,unit_snapshot) values($1,$2,'2026-10-16T12:00:00Z','2026-10-16','lunch','ignored',50,'g') returning *",
+        [alice, f.id],
+      );
+      await db.exec("reset role");
+    }
     await db.exec(await readFile(`supabase/migrations/${filename}`, "utf8"));
   }
   await asUser(alice);
@@ -630,6 +643,133 @@ test("set-level history keeps stable exercise IDs and rejects invalid effort", a
     db.query("delete from public.exercises where id=$1", [exercise]),
     /foreign key/,
   );
+});
+test("volume migration leaves pre-existing gram entry snapshots unchanged", async () => {
+  await asUser(alice);
+  const after = await row(
+    "select * from public.nutrition_entries where id=$1",
+    [preVolumeEntry.id],
+  );
+  const { ml_snapshot, ...originalFields } = after;
+  assert.equal(ml_snapshot, null);
+  assert.deepEqual(originalFields, preVolumeEntry);
+});
+test("volume intake uses ml, protects historical basis, zeros, direct writes and owner isolation", async () => {
+  await asUser(alice);
+  const liquid = await row(
+    "insert into public.foods(owner_id,name,nutrition_basis,kcal_per_100g,protein_per_100g,carbs_per_100g,fat_per_100g,nutrients,portions) values($1,'Energy drink','ml',46,0,11,0,$2,$3) returning id",
+    [
+      alice,
+      JSON.stringify({ sugars: { amount: 11, unit: "g" } }),
+      JSON.stringify(
+        [250, 330, 500].map((ml) => ({
+          id: `can-${ml}`,
+          label: `${ml} ml`,
+          ml,
+        })),
+      ),
+    ],
+  );
+  const insert =
+    "insert into public.nutrition_entries(owner_id,food_id,logged_at,local_date,meal_slot,name_snapshot,quantity,unit_snapshot) values($1,$2,'2026-10-16T12:00:00Z','2026-10-16','lunch','forged', $3,$4) returning *";
+  let first;
+  for (const amount of [250, 330, 500]) {
+    const e = await row(insert, [alice, liquid.id, amount, "ml"]);
+    assert.equal(Number(e.ml_snapshot), amount);
+    assert.equal(e.grams_snapshot, null);
+    assert.equal(Number(e.kcal_snapshot), (46 * amount) / 100);
+    assert.equal(
+      Number(e.nutrients_snapshot.sugars.amount),
+      (11 * amount) / 100,
+    );
+    assert.equal(e.basis_snapshot.basisUnit, "ml");
+    first ??= e;
+    const serving = await row(insert, [alice, liquid.id, 1, `can-${amount}`]);
+    assert.equal(Number(serving.ml_snapshot), amount);
+  }
+  await assert.rejects(
+    db.query(insert, [alice, liquid.id, 250, "g"]),
+    /Serving is unavailable/,
+  );
+  await assert.rejects(
+    db.query("update public.foods set nutrition_basis='g' where id=$1", [
+      liquid.id,
+    ]),
+    /basis is immutable/,
+  );
+  await assert.rejects(
+    db.query("update public.foods set portions=$2 where id=$1", [
+      liquid.id,
+      JSON.stringify([{ id: "can", label: "can", grams: 250 }]),
+    ]),
+    /Invalid serving conversion/,
+  );
+  await db.query(
+    "update public.foods set kcal_per_100g=99,nutrients=$2,portions='[]' where id=$1",
+    [liquid.id, JSON.stringify({ sugars: { amount: 22, unit: "g" } })],
+  );
+  const corrected = await row(
+    "update public.nutrition_entries set quantity=2,unit_snapshot='can-250',basis_snapshot='{}',grams_snapshot=123,ml_snapshot=999,kcal_snapshot=999 where id=$1 returning *",
+    [first.id],
+  );
+  assert.equal(Number(corrected.kcal_snapshot), 230);
+  assert.equal(Number(corrected.ml_snapshot), 500);
+  assert.equal(corrected.grams_snapshot, null);
+  assert.equal(Number(corrected.nutrients_snapshot.sugars.amount), 55);
+  for (const name of ["Sugar-free energy drink", "Water"]) {
+    const f = await row(
+      "insert into public.foods(owner_id,name,nutrition_basis,kcal_per_100g,protein_per_100g,carbs_per_100g,fat_per_100g,nutrients) values($1,$2,'ml',0,null,0,0,$3) returning id",
+      [alice, name, JSON.stringify({ sugars: { amount: 0, unit: "g" } })],
+    );
+    const e = await row(insert, [alice, f.id, 500, "ml"]);
+    assert.equal(Number(e.kcal_snapshot), 0);
+    assert.equal(e.protein_snapshot, null);
+    assert.equal(Number(e.nutrients_snapshot.sugars.amount), 0);
+  }
+  const recipeId = randomUUID();
+  await assert.rejects(
+    db.query("select public.save_nutrition_recipe($1)", [
+      JSON.stringify({
+        id: recipeId,
+        revision: 0,
+        name: "No guessed density",
+        servings: 1,
+        instructions: "",
+        ingredients: [{ foodId: liquid.id, grams: 100 }],
+      }),
+    ]),
+    /verified gram/,
+  );
+  assert.equal(
+    Number(
+      (await row("select count(*) from public.recipes where id=$1", [recipeId]))
+        .count,
+    ),
+    0,
+  );
+  await asUser(bob);
+  assert.equal(
+    Number(
+      (await row("select count(*) from public.foods where id=$1", [liquid.id]))
+        .count,
+    ),
+    0,
+  );
+  assert.equal(
+    Number(
+      (
+        await row("select count(*) from public.nutrition_entries where id=$1", [
+          first.id,
+        ])
+      ).count,
+    ),
+    0,
+  );
+  await assert.rejects(
+    db.query(insert, [bob, liquid.id, 250, "ml"]),
+    /unavailable/,
+  );
+  await asUser(alice);
 });
 test("nutrition snapshots survive food edits", async () => {
   await asUser(alice);

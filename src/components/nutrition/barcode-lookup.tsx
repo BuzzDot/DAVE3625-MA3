@@ -293,7 +293,10 @@ export function BarcodeLookup({
       {product && (
         <div className="space-y-3 border-t border-border pt-4">
           <h4 className="font-semibold">{product.name}</h4>
-          <p className="text-xs">Per 100 g. Unknown nutrients stay unknown.</p>
+          <p className="text-xs">
+            Per 100 {product.nutrition_basis ?? "g"}. Unknown nutrients stay
+            unknown.
+          </p>
           <MacroLine
             values={{
               kcal: product.kcal_per_100g,
@@ -302,6 +305,13 @@ export function BarcodeLookup({
               fat: product.fat_per_100g,
             }}
           />
+          <p className="text-xs">
+            Sugars:{" "}
+            {product.nutrients?.sugars?.amount == null
+              ? "Unknown"
+              : `${product.nutrients.sugars.amount} g`}{" "}
+            per 100 {product.nutrition_basis ?? "g"}
+          </p>
           <a
             className="block text-xs text-primary underline"
             href={product.url}
@@ -318,6 +328,8 @@ export function BarcodeLookup({
                 revision: 0,
                 name: product.name,
                 description: product.description,
+                nutrition_basis: product.nutrition_basis,
+                nutrients: product.nutrients,
                 kcal_per_100g: product.kcal_per_100g,
                 protein_per_100g: product.protein_per_100g,
                 carbs_per_100g: product.carbs_per_100g,

@@ -18,7 +18,7 @@ Wait for saved feedback. If a routine save fails, keep the page open and retry; 
 
 ## Log food and saved meals
 
-Choose a date in Nutrition. In Food library, search Norwegian food names, choose Log, confirm the meal category, quantity and gram/serving unit, then save. Create food accepts label values per 100 g and explicit gram-based serving sizes. Leave unknown nutrients blank; zero means a known zero.
+Choose a date in Nutrition. In Food library, search Norwegian food names, choose Log, confirm the meal category, quantity and serving unit, then save. The approved liquid release supports values per 100 g or 100 ml, with matching gram or milliliter servings. Leave unknown nutrients blank; zero means a known zero. Saved foods keep their original basis; create a new food if its basis was wrong.
 
 In Saved meals, create a recipe from foods and ingredient gram weights and set its serving yield. Log portion records the amount actually eaten, including fractional servings. The Diary's Saved meal buttons carry the chosen meal category into this flow. Edit/Remove on diary entries corrects/deletes consumption. Removing a catalog food/recipe archives it and preserves history.
 
@@ -28,14 +28,14 @@ Goals & history provides dated calorie/macronutrient targets and trends. Dashboa
 
 1. Open Nutrition → Food library → Scan a food barcode.
 2. Choose Use camera in a compatible browser over HTTPS (localhost also supports camera permissions), or type the 8, 12, 13 or 14 digit printed code and choose Find product.
-3. Check the product, source and calories/protein/carbohydrates/fat per 100 g. Choose Review food draft, compare/correct the values against the package, then Save food. This creates a personal food without logging consumption.
-4. Search for that saved food, choose Log, confirm the consumed quantity, meal/date and unit, then Save food entry. It can also be a recipe ingredient.
+3. Check the product, source and nutrition basis. The liquid release displays per 100 g or 100 ml plus sugars. Choose Review food draft, compare/correct the values against the package, then Save food. This creates a personal food without logging consumption.
+4. Search for that saved food, choose Log, confirm the consumed quantity, meal/date and unit, then Save food entry. Liquids offer milliliters and 250/330/500-ml portions. Only gram-based foods can be recipe ingredients; no density conversion is assumed.
 
 Camera frames stay on your device; only the decoded/typed barcode goes to lookup. Stop camera or leave the Food library to release the camera. Unsupported browsers, denied permissions and failed lookups leave manual barcode entry, ordinary food search and Create food available.
 
-Equivalent leading-zero barcode formats are accepted when Open Food Facts returns the same product under its normalized code. Camera scanning uses a JavaScript ZXing decoder and standard camera access; it does not require the experimental BarcodeDetector API. Chrome/Edge and mobile Chrome tests decode actual video pixels from generated barcode input. Physical-camera and iPhone Safari behavior still need your device check. No Open Food Facts account is required.
+Equivalent leading-zero barcode formats are accepted when Open Food Facts returns the same product under its normalized code. Camera scanning uses a JavaScript ZXing decoder and standard camera access; it does not require the experimental BarcodeDetector API. Chrome/Edge and mobile Chrome tests decode actual video pixels from generated barcode input. The user confirmed physical iPhone Safari scanning works on the camera hotfix; the liquid enhancement still requires a device retest. No Open Food Facts account is required.
 
-Open Food Facts data may be incomplete or incorrect. Only confirmed gram-based labels are supported; liquids/unclear bases require verified manual values per 100 g. Unknown nutrients remain unknown. Each saved draft is a personal copy: scanning again does not automatically update/deduplicate it. Reuse the existing food rather than saving another copy. Source/barcode/retrieval information is kept in its editable description, not a verified integration record.
+Open Food Facts data may be incomplete or incorrect. The liquid release accepts confirmed weight/volume metadata and rejects ambiguous units. It never assumes 100 ml weighs 100 g or that a water/sugar-free name means zero. Unknown nutrients remain unknown. Each saved draft is a personal copy: scanning again does not automatically update/deduplicate it. Reuse the existing food rather than saving another copy. Source/barcode/retrieval information is kept in its editable description, not a verified integration record. See [LIQUID-NUTRITION.md](LIQUID-NUTRITION.md) for release status and limits.
 
 ## Plan workouts and meals
 

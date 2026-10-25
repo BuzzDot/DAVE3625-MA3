@@ -115,6 +115,7 @@ export type Database = {
           source_url: string | null;
           imported_at: string | null;
           revision: number;
+          nutrition_basis: string;
         };
         Insert: {
           id?: string;
@@ -136,6 +137,7 @@ export type Database = {
           source_url?: string | null;
           imported_at?: string | null;
           revision?: number;
+          nutrition_basis?: string;
         };
         Update: {
           id?: string;
@@ -157,6 +159,7 @@ export type Database = {
           source_url?: string | null;
           imported_at?: string | null;
           revision?: number;
+          nutrition_basis?: string;
         };
         Relationships: [];
       };
@@ -378,6 +381,7 @@ export type Database = {
           basis_snapshot: Json | null;
           nutrients_snapshot: Json;
           revision: number;
+          ml_snapshot: number | null;
         };
         Insert: {
           id?: string;
@@ -404,6 +408,7 @@ export type Database = {
           basis_snapshot?: Json | null;
           nutrients_snapshot?: Json;
           revision?: number;
+          ml_snapshot?: number | null;
         };
         Update: {
           id?: string;
@@ -430,6 +435,7 @@ export type Database = {
           basis_snapshot?: Json | null;
           nutrients_snapshot?: Json;
           revision?: number;
+          ml_snapshot?: number | null;
         };
         Relationships: [
           {

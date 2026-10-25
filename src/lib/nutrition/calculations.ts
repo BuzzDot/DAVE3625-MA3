@@ -1,6 +1,10 @@
 import {
   macroKeys,
   portions,
+  foodBasis,
+  portionAmount,
+  type Portion,
+  type NutritionBasis,
   type Food,
   type Macros,
   type Recipe,
@@ -15,7 +19,7 @@ export const foodMacros = (f: Food): Macros => ({
 export function toGrams(
   quantity: number,
   unit: string,
-  choices: { id: string; grams: number }[],
+  choices: { id: string; grams?: number }[],
 ) {
   const factor = unit === "g" ? 1 : choices.find((p) => p.id === unit)?.grams;
   if (
@@ -51,7 +55,7 @@ export function sumMacros(items: Macros[]): Macros {
 export function recipeNutrition(recipe: Recipe, foods: Food[]) {
   const items = recipe.ingredients.map((i) => {
     const food = foods.find((f) => f.id === i.foodId);
-    return food
+    return food && foodBasis(food) === "g"
       ? scale(foodMacros(food), i.grams)
       : { kcal: null, protein: null, carbs: null, fat: null };
   });
@@ -69,6 +73,16 @@ export const entryMacros = (e: Entry): Macros => ({
   carbs: e.carbs_snapshot,
   fat: e.fat_snapshot,
 });
+export function entryUnitLabel(entry: Entry): string {
+  const basis = entry.basis_snapshot;
+  if (!basis || typeof basis !== "object" || Array.isArray(basis))
+    return entry.unit_snapshot;
+  return (
+    portions(basis.portions ?? []).find(
+      (portion) => portion.id === entry.unit_snapshot,
+    )?.label ?? entry.unit_snapshot
+  );
+}
 export function goalForDate<
   T extends { starts_on: string; ends_on: string | null },
 >(goals: T[], date: string) {
@@ -119,5 +133,27 @@ export const display = (n: number | null, unit = "") =>
     ? "Unknown"
     : `${new Intl.NumberFormat("en", { maximumFractionDigits: 1 }).format(n)}${unit}`;
 export function foodGrams(food: Food, quantity: number, unit: string) {
+  if (foodBasis(food) !== "g")
+    throw new Error("A volume-only food has no verified gram conversion.");
   return toGrams(quantity, unit, portions(food.portions));
+}
+export function toBasisAmount(
+  quantity: number,
+  unit: string,
+  basis: NutritionBasis,
+  choices: Portion[],
+) {
+  const serving = choices.find((p) => p.id === unit);
+  const factor =
+    unit === basis ? 1 : serving ? portionAmount(serving, basis) : undefined;
+  if (
+    !Number.isFinite(quantity) ||
+    quantity <= 0 ||
+    !factor ||
+    !Number.isFinite(factor) ||
+    factor <= 0 ||
+    quantity * factor > 1000000
+  )
+    throw new Error("Enter a valid quantity and supported serving.");
+  return quantity * factor;
 }

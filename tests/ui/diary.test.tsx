@@ -109,7 +109,7 @@ it("a scheduling link preselects an owned recipe but still requires preview and 
   );
   expect(screen.getByText("1 planned meals")).toBeTruthy();
   const first = vi.mocked(createSchedule).mock.calls[0][0];
-  fireEvent.click(screen.getByRole("button", { name: "Save schedule" }));
+  fireEvent.click(await screen.findByRole("button", { name: "Save schedule" }));
   await waitFor(() => expect(screen.getByText("Schedule saved.")).toBeTruthy());
   expect(vi.mocked(createSchedule).mock.calls[1][0]).toEqual(first);
 });

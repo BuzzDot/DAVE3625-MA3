@@ -4,7 +4,15 @@ export type Food = Database["public"]["Tables"]["foods"]["Row"] & {
 };
 export type Entry = Database["public"]["Tables"]["nutrition_entries"]["Row"];
 export type Goal = Database["public"]["Tables"]["nutrition_goals"]["Row"];
-export type Portion = { id: string; label: string; grams: number };
+export type NutritionBasis = "g" | "ml";
+export type Portion = { id: string; label: string } & (
+  { grams: number; ml?: never } | { ml: number; grams?: never }
+);
+export const foodBasis = (food: {
+  nutrition_basis?: string;
+}): NutritionBasis => (food.nutrition_basis === "ml" ? "ml" : "g");
+export const portionAmount = (portion: Portion, basis: NutritionBasis) =>
+  basis === "ml" ? portion.ml : portion.grams;
 export type Macros = {
   kcal: number | null;
   protein: number | null;
@@ -34,6 +42,8 @@ export type FoodInput = {
   revision: number;
   name: string;
   description: string;
+  nutrition_basis?: NutritionBasis;
+  nutrients?: NutrientMap;
   kcal_per_100g: number | null;
   protein_per_100g: number | null;
   carbs_per_100g: number | null;
@@ -73,7 +83,8 @@ export function portions(value: Json): Portion[] {
           !Array.isArray(p) &&
           typeof p.id === "string" &&
           typeof p.label === "string" &&
-          typeof p.grams === "number",
+          ((typeof p.grams === "number" && p.ml === undefined) ||
+            (typeof p.ml === "number" && p.grams === undefined)),
       )
     : [];
 }

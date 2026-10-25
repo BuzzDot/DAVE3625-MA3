@@ -30,6 +30,7 @@ import {
   sumMacros,
   recipeNutrition,
   entryMacros,
+  entryUnitLabel,
   goalForDate,
 } from "@/lib/nutrition/calculations";
 import {
@@ -116,6 +117,8 @@ export function NutritionWorkspace({
             revision: food.revision,
             name: food.name,
             description: food.description,
+            nutrition_basis: food.nutrition_basis === "ml" ? "ml" : "g",
+            nutrients: food.nutrients as FoodInput["nutrients"],
             kcal_per_100g: food.kcal_per_100g,
             protein_per_100g: food.protein_per_100g,
             carbs_per_100g: food.carbs_per_100g,
@@ -263,8 +266,14 @@ export function NutritionWorkspace({
                               {e.name_snapshot}
                             </p>
                             <p className="mt-1 text-xs text-muted-foreground">
-                              {e.quantity} {e.unit_snapshot} ·{" "}
-                              {display(e.grams_snapshot, " g")}
+                              {e.quantity}{" "}
+                              {e.ml_snapshot != null
+                                ? entryUnitLabel(e)
+                                : e.unit_snapshot}{" "}
+                              ·{" "}
+                              {e.ml_snapshot != null
+                                ? display(e.ml_snapshot, " ml")
+                                : display(e.grams_snapshot, " g")}
                             </p>
                             <MacroLine values={entryMacros(e)} />
                             <div className="mt-2 flex flex-wrap gap-2">
@@ -325,7 +334,7 @@ export function NutritionWorkspace({
                   Find your everyday foods
                 </h2>
                 <p className="mt-2 text-xs text-muted-foreground">
-                  Norwegian search · Values per 100 g of edible food.
+                  Norwegian search · Values per 100 g or 100 ml, as labeled.
                 </p>
               </div>
               <Button onClick={() => editFood()}>

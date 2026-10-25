@@ -1,22 +1,43 @@
 import { z } from "zod";
 const nullable = z.number().finite().min(0).max(100).nullable();
-export const portionSchema = z
-  .object({
-    id: z
-      .string()
-      .min(1)
-      .max(80)
-      .refine((v) => v !== "g"),
-    label: z.string().trim().min(1).max(100),
-    grams: z.number().positive().max(100000),
-  })
-  .strict();
+const portionFields = {
+  id: z
+    .string()
+    .min(1)
+    .max(80)
+    .refine((v) => v !== "g"),
+  label: z.string().trim().min(1).max(100),
+};
+export const portionSchema = z.union([
+  z
+    .object({ ...portionFields, grams: z.number().positive().max(100000) })
+    .strict(),
+  z
+    .object({
+      ...portionFields,
+      ml: z.number().positive().max(100000),
+      id: portionFields.id.refine((v) => v !== "ml"),
+    })
+    .strict(),
+]);
+/* Gram and volume portions are deliberately distinct; no density is implied. */
+const nutrientSchema = z.record(
+  z.string().min(1).max(80),
+  z
+    .object({
+      amount: z.number().finite().min(0).max(1000000).nullable(),
+      unit: z.string().min(1).max(20),
+    })
+    .strict(),
+);
 export const foodSchema = z
   .object({
     id: z.uuid(),
     revision: z.number().int().min(0),
     name: z.string().trim().min(1).max(200),
     description: z.string().max(2000),
+    nutrition_basis: z.enum(["g", "ml"]).default("g"),
+    nutrients: nutrientSchema.optional(),
     kcal_per_100g: z.number().min(0).max(2000).nullable(),
     protein_per_100g: nullable,
     carbs_per_100g: nullable,
@@ -29,7 +50,14 @@ export const foodSchema = z
         "Serving names must be unique",
       ),
   })
-  .strict();
+  .strict()
+  .refine(
+    (food) =>
+      food.portions.every((p) =>
+        food.nutrition_basis === "ml" ? "ml" in p : "grams" in p,
+      ),
+    "Serving units must match the food's nutrition basis.",
+  );
 export const recipeSchema = z
   .object({
     id: z.uuid(),

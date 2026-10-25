@@ -1,5 +1,9 @@
 # Implementation plan
 
+## Liquid nutrition enhancement — approved release
+
+Implemented explicit weight/volume barcode nutrition, ml serving/logging UI, zero-calorie/zero-sugar preservation, immutable history and dimensional validation. A forward migration is necessary because the prior calculation model stores gram-only serving conversions; using its gram fields as milliliters would invent a density. The migration adds a food basis and volume snapshot, leaving old records intact. Recipes remain gram-based and cannot silently consume volume-only foods. Lint/TypeScript/build, 72 domain/PGlite, 42 component, 27 native PostgreSQL cases and three isolated local Supabase API scenarios passed. All 14 selected desktop/mobile browser cases passed; the two affected liquid cases passed again after a serving-label display correction. The user now explicitly approves commit/push, the reviewed production migration, data preservation verification, Vercel deployment and live browser acceptance in that order. CLI dry run selects only the new migration; all 27 production tables have baseline counts/digests for comparison. Exact publication identifiers/results are recorded in the final handoff/evidence. See [LIQUID-NUTRITION.md](LIQUID-NUTRITION.md). Physical iPhone Safari scanner success was confirmed by the user on the previous hotfix; this liquid enhancement still requires a physical-device retest.
+
 Updated October 25, 2026. A checked item means implemented and verified at its stated scope. Demo interactions do not count as production tracking.
 
 ## Approved barcode camera hotfix

@@ -9,6 +9,7 @@ test-results/
 coverage/
 .supabase/
 supabase/.temp/
+supabase/.branches/
 .env.local
 .vercel/
 *.log

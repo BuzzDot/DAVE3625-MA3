@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import {
   recipeNutrition,
   foodMacros,
-  foodGrams,
+  toBasisAmount,
   scale,
   display,
   noonInZone,
@@ -13,6 +13,9 @@ import {
 import {
   macroKeys,
   portions,
+  foodBasis,
+  portionAmount,
+  type Portion,
   type Food,
   type FoodInput,
   type Recipe,
@@ -34,6 +37,7 @@ export function FoodEditor({
   onCancel: () => void;
   onSave: () => void;
 }) {
+  const baseUnit = foodBasis(value);
   return (
     <Card className="border-primary">
       <h2 className="mb-4 text-lg font-semibold">
@@ -67,9 +71,33 @@ export function FoodEditor({
             }
           />
         </label>
+        <label className="block text-xs">
+          Nutrition basis
+          <select
+            className="mt-2"
+            value={baseUnit}
+            disabled={value.revision > 0}
+            onChange={(e) =>
+              onChange({
+                ...value,
+                nutrition_basis: e.target.value as "g" | "ml",
+                kcal_per_100g: null,
+                protein_per_100g: null,
+                carbs_per_100g: null,
+                fat_per_100g: null,
+                nutrients: {},
+                portions: [],
+              })
+            }
+          >
+            <option value="g">Per 100 grams (g)</option>
+            <option value="ml">Per 100 milliliters (ml)</option>
+          </select>
+        </label>
         <p className="text-xs text-muted-foreground">
-          Per 100 g. Leave unknown values blank; enter 0 only when the value is
-          known to be zero.
+          Per 100 {baseUnit}. Changing basis clears values; saved foods keep
+          their basis. Leave unknown values blank; enter 0 only when the value
+          is known to be zero.
         </p>
         <div className="grid grid-cols-2 gap-3">
           {(["kcal", "protein", "carbs", "fat"] as const).map((k) => {
@@ -81,7 +109,7 @@ export function FoodEditor({
             return (
               <NumberField
                 key={k}
-                label={`${labels[k]} per 100 g`}
+                label={`${labels[k]} per 100 ${baseUnit}`}
                 value={value[field]}
                 optional
                 max={k === "kcal" ? 2000 : 100}
@@ -90,6 +118,23 @@ export function FoodEditor({
             );
           })}
         </div>
+        {value.nutrients?.sugars && (
+          <NumberField
+            label={`Sugars per 100 ${baseUnit}`}
+            optional
+            max={100}
+            value={value.nutrients.sugars.amount}
+            onChange={(amount) =>
+              onChange({
+                ...value,
+                nutrients: {
+                  ...value.nutrients,
+                  sugars: { amount, unit: "g" },
+                },
+              })
+            }
+          />
+        )}
         <h3 className="text-sm font-semibold">Serving units</h3>
         {value.portions.map((p, i) => (
           <div key={p.id} className="grid gap-3 sm:grid-cols-[1fr_1fr_auto]">
@@ -111,13 +156,21 @@ export function FoodEditor({
               />
             </label>
             <NumberField
-              label={`Serving ${i + 1} grams`}
-              value={p.grams}
+              label={`Serving ${i + 1} ${baseUnit === "ml" ? "milliliters" : "grams"}`}
+              value={portionAmount(p, baseUnit) ?? null}
               onChange={(grams) =>
                 onChange({
                   ...value,
                   portions: value.portions.map((v, j) =>
-                    j === i ? { ...v, grams: grams ?? 0 } : v,
+                    j === i
+                      ? {
+                          id: v.id,
+                          label: v.label,
+                          ...(baseUnit === "ml"
+                            ? { ml: grams ?? 0 }
+                            : { grams: grams ?? 0 }),
+                        }
+                      : v,
                   ),
                 })
               }
@@ -145,7 +198,11 @@ export function FoodEditor({
               ...value,
               portions: [
                 ...value.portions,
-                { id: crypto.randomUUID(), label: "serving", grams: 100 },
+                {
+                  id: crypto.randomUUID(),
+                  label: "serving",
+                  ...(baseUnit === "ml" ? { ml: 100 } : { grams: 100 }),
+                },
               ],
             })
           }
@@ -262,8 +319,12 @@ export function RecipeEditor({
       </form>
       <div className="mt-6">
         <h3 className="mb-3 text-sm font-semibold">Add ingredients</h3>
+        <p className="mb-3 text-xs text-muted-foreground">
+          Recipes require gram-based ingredients. Volume-only foods can be
+          logged directly in milliliters.
+        </p>
         <FoodSearch
-          foods={foods.filter((f) => !f.archived_at)}
+          foods={foods.filter((f) => !f.archived_at && foodBasis(f) === "g")}
           chooseLabel="Add ingredient"
           onChoose={(food) => {
             if (value.ingredients.length < 100)
@@ -301,13 +362,14 @@ export function LogEditor({
     entry?.quantity ?? (recipe ? 1 : 100),
   );
   const [unit, setUnit] = useState(
-    entry?.unit_snapshot ?? (recipe ? "serving" : "g"),
+    entry?.unit_snapshot ?? (recipe ? "serving" : food ? foodBasis(food) : "g"),
   );
   const [meal, setMeal] = useState(selection.meal);
   const [entryDate, setEntryDate] = useState(entry?.local_date ?? date);
   const [error, setError] = useState("");
   const basis = entry?.basis_snapshot as {
-    portions?: { id: string; label: string; grams: number }[];
+    portions?: Portion[];
+    basisUnit?: "g" | "ml";
     kcal: number | null;
     protein: number | null;
     carbs: number | null;
@@ -326,14 +388,25 @@ export function LogEditor({
             },
           ]
         : []);
+  const baseUnit = basis?.basisUnit ?? (food ? foodBasis(food) : "g");
   const conversion =
-    unit === "g" ? 1 : (choices.find((p) => p.id === unit)?.grams ?? 0);
+    unit === baseUnit
+      ? 1
+      : choices.find((p) => p.id === unit)
+        ? (portionAmount(
+            choices.find((p) => p.id === unit)!,
+            baseUnit,
+          ) ?? 0)
+        : 0;
   let preview: Macros = { kcal: null, protein: null, carbs: null, fat: null };
   if (quantity !== null && quantity > 0) {
     if (entry && basis) preview = scale(basis, quantity * conversion);
     else if (food) {
       try {
-        preview = scale(foodMacros(food), foodGrams(food, quantity, unit));
+        preview = scale(
+          foodMacros(food),
+          toBasisAmount(quantity, unit, baseUnit, choices),
+        );
       } catch {}
     } else if (recipe) {
       const n = recipeNutrition(recipe, foods);
@@ -388,10 +461,13 @@ export function LogEditor({
               value={unit}
               onChange={(e) => setUnit(e.target.value)}
             >
-              <option value="g">grams (g)</option>
+              <option value={baseUnit}>
+                {baseUnit === "ml" ? "milliliters (ml)" : "grams (g)"}
+              </option>
               {choices.map((p) => (
                 <option key={p.id} value={p.id}>
-                  {p.label} ({display(p.grams, " g")})
+                  {p.label} (
+                  {display(portionAmount(p, baseUnit) ?? null, ` ${baseUnit}`)})
                 </option>
               ))}
             </select>
@@ -422,7 +498,11 @@ export function LogEditor({
           </label>
         </div>
         <p className="text-xs text-muted-foreground">
-          {display(quantity === null ? null : quantity * conversion, " g")} ·{" "}
+          {display(
+            quantity === null ? null : quantity * conversion,
+            ` ${baseUnit}`,
+          )}{" "}
+          ·{" "}
           {entry
             ? "Uses the original nutritional snapshot."
             : "Values are confirmed by the database when saved."}
