@@ -2,6 +2,12 @@
 
 Updated October 25, 2026. A checked item means implemented and verified at its stated scope. Demo interactions do not count as production tracking.
 
+## Published release and production acceptance
+
+Explicit user approval was received and the exact 45 reviewed files were committed/pushed as `b272013090d6642943e9339b864e61f34cd5a0b7`. Vercel's normal cloud build completed successfully and the production alias was verified against that commit. **All 22 focused desktop/mobile production Chromium cases and three real Supabase API scenarios passed, without skips.** This includes barcode lookup/confirmation/intake, historical nutrition snapshots, fresh-session persistence, workouts, calendar/health, dashboard, navigation, auth/session refresh/logout and two-user restrictions. Synthetic-camera/permission fallback passed; physical camera, Safari and real inbox delivery remain unverified. Garmin remains deferred.
+
+The approved verification docs are updated as a follow-up without changing runtime code, then published so main and live deployment metadata remain aligned. Credential/artifact source audit passed; the deployed source tree contained none of the prohibited private/tool/test-artifact paths. Disposable verification accounts were removed. Local skill tooling stays on disk under local Git exclusions. The older approval-pending/local-only sections below are historical preparation records. See [RELEASE_PREPARATION.md](RELEASE_PREPARATION.md) for scope, identifiers, checks and limits.
+
 ## Final release candidate — approval pending
 
 Release review is complete: checked uncommitted application/test/docs changes, retained existing MVP behavior and auth/RLS/snapshot boundaries, fixed equivalent leading-zero barcodes, excluded local skill tooling from publication, and inspected the exact Vercel project/environment-key metadata through the already authorized CLI. Local `main` matches remote `f710998`; the older production `3cc9c25` is READY. No release commit or new deployment exists yet. Pushing does not auto-deploy: project Git linking is absent and automatic Git deployment is disabled.

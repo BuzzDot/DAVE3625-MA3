@@ -1,5 +1,7 @@
 # Health diary and calendar
 
+Release status, October 25, 2026: the contextual scheduling links, empty-state guidance, shared nutrition totals and mobile layout described below are now deployed. The new application release passed the live desktop/mobile calendar/health/fulfillment, dashboard and connection workflows as part of 22 production browser cases. Earlier paragraphs describing these changes as local refer to their preparation phase. See [RELEASE_PREPARATION.md](RELEASE_PREPARATION.md).
+
 The private dashboard (`/`), `/calendar`, and `/health` use authenticated Supabase records. Fictional previews remain at `/demo/dashboard` and `/demo/calendar`. Failed live reads never substitute fixtures.
 
 ## Measurements and goals

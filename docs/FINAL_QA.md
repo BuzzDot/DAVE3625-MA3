@@ -1,5 +1,11 @@
 # Final QA and release preparation
 
+## Approved release — live production results
+
+Application commit `b272013090d6642943e9339b864e61f34cd5a0b7` was committed/pushed after approval and deployed by a successful Vercel cloud build on October 25, 2026. The public alias's deployment metadata matched that commit. **All 22 focused real production desktop/mobile Chromium cases and all three Supabase API scenarios passed with no skips/failures.** Barcode lookup and confirmed intake, nutrition/workout/history persistence across fresh sessions, auth/session refresh/logout, calendar/health, dashboard, contextual scheduling, mobile layout and owner isolation are verified on the new live application. Expanded exposure checks denied local environment/tool/report files. All disposable fixtures were removed.
+
+Camera tests used synthetic video and a simulated detector; physical-camera decoding, Safari and real email delivery remain unverified. The two deliberate failed calendar-save requests are expected recovery tests. The ignored `playwright-report/final-release/` folder retains logs, JSON, navigation/diagnostic evidence and post-login screenshots. The approved documentation follow-up changes no runtime code and is published with a focused final-head recheck. See [RELEASE_PREPARATION.md](RELEASE_PREPARATION.md). The original local QA and earlier-production records below are historical, not the current release status.
+
 Date: October 25, 2026. Scope: current local working tree, including pre-existing uncommitted diary improvements. Nothing was committed, pushed or deployed. The existing Vercel release was not changed or re-certified. The original assignment brief is unavailable; the documented acceptance criteria and supplied final-QA request are the baseline.
 
 ## Feature status

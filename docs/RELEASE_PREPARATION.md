@@ -1,6 +1,21 @@
-# Release candidate — publication approval pending
+# Release record and preparation snapshot
 
-Prepared October 25, 2026. This is the local release candidate, not a newly deployed release. Stop before commit, push or deployment until the user explicitly approves those actions.
+Released October 25, 2026 after the user's explicit approval. The preparation snapshot below records the pre-approval state and must not be read as the current deployment status.
+
+## Approved publication and live acceptance
+
+- Exactly the **45 manifest-approved files**, with all original SHA-256 hashes checked, were staged and committed as `b272013090d6642943e9339b864e61f34cd5a0b7`, then pushed to GitHub `main`.
+- The explicit Vercel cloud deployment `dpl_BatBnbLFR1vqbGjwjsFKKXQK8hYv` reached **READY**. The public origin's deployment API metadata reported the same commit and `main` ref before browser acceptance. No Windows prebuilt upload was used.
+- Against **https://form-dave3625-ma3.vercel.app**, **22 production Chromium cases passed with zero skips/failures**, plus all **three real Supabase API scenarios**. Real browser interactions covered login/logout/refresh, anonymous protection, new-account empty states, saved workouts and progress, personal foods/recipes/intake/goals, barcode normalization and reviewed 25 g intake, historical snapshots and second-user denial, calendar/health/recurrence/fulfillment, dashboard totals, contextual links and desktop/mobile navigation.
+- Native camera flow was exercised with Chromium's synthetic MediaStream and simulated detector output, including track release and permission fallback. This is **not physical-camera or Safari verification**. Public signup form availability was checked; real confirmation-email delivery was not tested.
+- There were zero recorded page exceptions. The two `net::ERR_FAILED` requests and matching console messages were deliberate interrupted-calendar-save tests, one per layout; retry and persistence passed. Navigation/prefetch cancellations are retained in diagnostic evidence, not reported as zero network failures.
+- All three disposable accounts were removed by this acceptance run. No real user records were reset. Browser traces/password artifacts were disabled.
+- `npm run audit:source -- --tracked` passed. The Vercel upload tree was inspected: 187 listed paths, no credential/local-tool/test-artifact paths. Expanded production probes denied environment files, local tooling, admin scripts and browser artifacts. Actual reports/screenshots remain in ignored `playwright-report/final-release/`.
+- The source commit contains exactly the approved file list. Pre-existing `.agents/` and `skills-lock.json` are preserved locally and excluded through `.git/info/exclude`; they were not committed or uploaded.
+
+The documentation follow-up uses only already approved paths and changes no runtime code. It is pushed and explicitly redeployed to keep the final GitHub head and live deployment metadata aligned, with a focused final-head browser recheck. The exact final head/deployment metadata and results are retained locally in the release evidence and provided in the final handoff. The application commit above is immutable and identifies the code accepted by the complete 22-case gate.
+
+## Preparation snapshot (before approval)
 
 ## Source and deployment targets
 

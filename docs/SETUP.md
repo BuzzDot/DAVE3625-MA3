@@ -1,6 +1,6 @@
 # Authentication and database setup
 
-October 25 local release addition: barcode lookup requires no new environment variables, API key, dependency or SQL migration. The existing authenticated app queries Open Food Facts over outbound HTTPS. Camera scanning additionally requires native BarcodeDetector support, camera permission and a secure context (HTTPS or localhost); same-origin camera use is enabled in `next.config.ts`. Manual code entry remains available. See [USER_GUIDE.md](USER_GUIDE.md) and [FINAL_QA.md](FINAL_QA.md). Existing production was not redeployed.
+October 25 released addition: barcode lookup requires no new environment variables, API key, dependency or SQL migration. The existing authenticated app queries Open Food Facts over outbound HTTPS. Camera scanning additionally requires native BarcodeDetector support, camera permission and a secure context (HTTPS or localhost); same-origin camera use is enabled in `next.config.ts`. Manual code entry remains available. See [USER_GUIDE.md](USER_GUIDE.md) and [FINAL_QA.md](FINAL_QA.md). These additions are deployed and passed live desktop/mobile acceptance; physical-camera and real-inbox checks remain outstanding.
 
 The workout, nutrition, health and calendar diaries use Supabase. Native SQL test clusters do not substitute for real Supabase Auth. Without a configured URL/key, private pages show setup instructions, signup/login are disabled, and explicit demo pages remain available.
 

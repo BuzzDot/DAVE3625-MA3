@@ -24,7 +24,7 @@ In Saved meals, create a recipe from foods and ingredient gram weights and set i
 
 Goals & history provides dated calorie/macronutrient targets and trends. Dashboard and Nutrition compare recorded totals to the target applicable to that date. Planned meals never count as intake.
 
-## Look up a barcode (local release addition)
+## Look up a barcode
 
 1. Open Nutrition → Food library → Scan a food barcode.
 2. Choose Use camera in a compatible browser over HTTPS (localhost also supports camera permissions), or type the 8, 12, 13 or 14 digit printed code and choose Find product.
@@ -51,4 +51,4 @@ Dashboard summarizes actual health/nutrition, upcoming plans and recent workouts
 
 ## Current limits
 
-Garmin import/sync, nutrition-label OCR, meal-photo estimates and public community publishing are not implemented. Community is a labeled demo. Local release additions need a separately approved deployment before appearing on the existing Vercel site. See [final QA evidence](FINAL_QA.md) for tested behavior and remaining device/inbox checks.
+Garmin import/sync, nutrition-label OCR, meal-photo estimates and public community publishing are not implemented. Community is a labeled demo. Barcode lookup and connected-diary improvements were released on October 25, 2026. See the [release record](RELEASE_PREPARATION.md) for tested behavior and remaining device/inbox checks.
