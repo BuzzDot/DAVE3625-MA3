@@ -27,7 +27,13 @@ test("real barcode lookup, reviewed personal food and confirmed quantity persist
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.name));
   page.on("console", (message) => {
-    if (message.type() === "error") errors.push(message.text());
+    // Full Chrome/Edge also request the existing app's optional favicon.
+    // Keep every other console error visible to this regression test.
+    if (
+      message.type() === "error" &&
+      !message.location().url.endsWith("/favicon.ico")
+    )
+      errors.push(message.text());
   });
   page.on("requestfailed", (request) => {
     if (request.failure()?.errorText !== "net::ERR_ABORTED")
@@ -55,13 +61,21 @@ test("real barcode lookup, reviewed personal food and confirmed quantity persist
         })
       ).error,
     ).toBeNull();
-    // Force the unsupported-browser branch; real hardware decoding is a separate device check.
-    await page.addInitScript(() =>
+    // No native detector is needed. Exercise missing hardware separately.
+    await page.addInitScript(() => {
       Object.defineProperty(window, "BarcodeDetector", {
         value: undefined,
         configurable: true,
-      }),
-    );
+      });
+      if (!navigator.mediaDevices)
+        Object.defineProperty(navigator, "mediaDevices", {
+          configurable: true,
+          value: {},
+        });
+      navigator.mediaDevices.getUserMedia = async () => {
+        throw new DOMException("No camera", "NotFoundError");
+      };
+    });
     await login(page);
     await page.goto(`/nutrition?date=${date}`);
     await page
@@ -69,9 +83,7 @@ test("real barcode lookup, reviewed personal food and confirmed quantity persist
       .click();
     await page.getByRole("button", { name: "Use camera", exact: true }).click();
     await expect(
-      page
-        .getByRole("alert")
-        .filter({ hasText: "Camera scanning is unavailable" }),
+      page.getByRole("alert").filter({ hasText: "No camera was found" }),
     ).toBeVisible();
     await page.getByLabel("Product barcode").fill("123");
     await page

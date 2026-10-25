@@ -33,7 +33,7 @@ Goals & history provides dated calorie/macronutrient targets and trends. Dashboa
 
 Camera frames stay on your device; only the decoded/typed barcode goes to lookup. Stop camera or leave the Food library to release the camera. Unsupported browsers, denied permissions and failed lookups leave manual barcode entry, ordinary food search and Create food available.
 
-Equivalent leading-zero barcode formats are accepted when Open Food Facts returns the same product under its normalized code. Browser verification uses a synthetic camera and simulated decoder output; physical-camera and Safari support still need a real-device check. No Open Food Facts account is required.
+Equivalent leading-zero barcode formats are accepted when Open Food Facts returns the same product under its normalized code. Camera scanning uses a JavaScript ZXing decoder and standard camera access; it does not require the experimental BarcodeDetector API. Chrome/Edge and mobile Chrome tests decode actual video pixels from generated barcode input. Physical-camera and iPhone Safari behavior still need your device check. No Open Food Facts account is required.
 
 Open Food Facts data may be incomplete or incorrect. Only confirmed gram-based labels are supported; liquids/unclear bases require verified manual values per 100 g. Unknown nutrients remain unknown. Each saved draft is a personal copy: scanning again does not automatically update/deduplicate it. Reuse the existing food rather than saving another copy. Source/barcode/retrieval information is kept in its editable description, not a verified integration record.
 

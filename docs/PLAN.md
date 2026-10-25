@@ -2,6 +2,12 @@
 
 Updated October 25, 2026. A checked item means implemented and verified at its stated scope. Demo interactions do not count as production tracking.
 
+## Approved barcode camera hotfix
+
+Confirmed root cause: the deployed scanner treated missing native BarcodeDetector support as unavailable camera access and returned before `getUserMedia`. Replaced native-only decoding with lazily loaded pinned `@zxing/browser`/`@zxing/library`, distinct capability/permission/hardware/decode feedback, per-scan cleanup and duplicate guards. Existing manual lookup, normalized identity, reviewed quantities, auth/RLS and snapshot persistence remain unchanged. No unrelated functionality/schema change.
+
+Local checks pass: lint/TypeScript/build, 62 domain/PGlite and 39 UI cases, 10 focused Chromium browser cases, then 16 installed Chrome/Edge/mobile Chrome/WebKit-manual compatibility cases, with real API checks. Camera success now requires actual JS decoding of barcode pixels in a genuine synthetic video stream with no native detector/mock decoder. Earlier fake-detector tests did not prove decoding and missed the reported compatibility bug. Windows WebKit lacks media capture APIs; Safari and physical cameras are not verified. The user explicitly approved hotfix publication after checks; exact production commit/results are recorded in the final handoff/evidence. See [BARCODE-CAMERA-HOTFIX.md](BARCODE-CAMERA-HOTFIX.md).
+
 ## Published release and production acceptance
 
 Explicit user approval was received and the exact 45 reviewed files were committed/pushed as `b272013090d6642943e9339b864e61f34cd5a0b7`. Vercel's normal cloud build completed successfully and the production alias was verified against that commit. **All 22 focused desktop/mobile production Chromium cases and three real Supabase API scenarios passed, without skips.** This includes barcode lookup/confirmation/intake, historical nutrition snapshots, fresh-session persistence, workouts, calendar/health, dashboard, navigation, auth/session refresh/logout and two-user restrictions. Synthetic-camera/permission fallback passed; physical camera, Safari and real inbox delivery remain unverified. Garmin remains deferred.
