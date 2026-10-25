@@ -142,6 +142,17 @@ test("Norwegian food, custom food, saved recipes, dated goals and fresh-browser 
       .getByRole("button", { name: "Save recipe", exact: true })
       .click();
     await saved(page);
+    await page.goto("/calendar");
+    await page.getByLabel("Activity type").selectOption("meal");
+    await page.getByLabel("Saved meals").selectOption({ label: name });
+    await page.getByRole("button", { name: "Preview schedule" }).click();
+    await expect(
+      page.getByRole("button", { name: "Save schedule", exact: true }),
+    ).toBeVisible();
+    await page.goto(`/nutrition?date=${date}`);
+    await page
+      .getByRole("button", { name: "Saved meals", exact: true })
+      .click();
     await page
       .getByRole("button", { name: `Favorite recipe ${name}`, exact: true })
       .click();

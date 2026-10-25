@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Copy, Dumbbell, Plus } from "lucide-react";
+import { ArrowRight, CalendarDays, Copy, Dumbbell, Plus } from "lucide-react";
 import {
   archiveRoutineAction,
   saveRoutineAction,
@@ -16,8 +16,18 @@ import { Button } from "@/components/ui/button";
 import { ExerciseLibrary } from "./exercise-library";
 import { RoutineEditor } from "./routine-editor";
 import { ConfirmDelete } from "./confirm-delete";
-import type { RoutineDocument, TrainingData } from "@/lib/training/types";
-export function TrainingWorkspace({ data }: { data: TrainingData }) {
+import type {
+  ActionResult,
+  RoutineDocument,
+  TrainingData,
+} from "@/lib/training/types";
+export function TrainingWorkspace({
+  data,
+  planningDate,
+}: {
+  data: TrainingData;
+  planningDate?: string;
+}) {
   const router = useRouter();
   const [tab, setTab] = useState<"routines" | "library" | "history">(
     "routines",
@@ -25,18 +35,35 @@ export function TrainingWorkspace({ data }: { data: TrainingData }) {
   const [editor, setEditor] = useState<RoutineDocument | null>(null);
   const [error, setError] = useState("");
   const [pending, startTransition] = useTransition();
-  function start(routineId: string | null) {
+  function perform<T>(
+    action: () => Promise<ActionResult<T>>,
+    onSuccess: (data: T) => void,
+  ) {
+    setError("");
     startTransition(async () => {
-      const result = await startWorkoutAction(
-        routineId,
-        Intl.DateTimeFormat().resolvedOptions().timeZone,
-      );
-      if (!result.success) {
-        setError(result.error);
-        return;
+      try {
+        const result = await action();
+        if (!result.success) {
+          setError(result.error);
+          return;
+        }
+        onSuccess(result.data);
+      } catch {
+        setError(
+          "The request did not complete. Check your connection and retry.",
+        );
       }
-      router.push(`/workouts/${result.data.id}`);
     });
+  }
+  function start(routineId: string | null) {
+    perform(
+      () =>
+        startWorkoutAction(
+          routineId,
+          Intl.DateTimeFormat().resolvedOptions().timeZone,
+        ),
+      (data) => router.push(`/workouts/${data.id}`),
+    );
   }
   const drafts = data.workouts.filter((w) => !w.completedAt);
   const completed = data.workouts.filter((w) => w.completedAt);
@@ -94,6 +121,7 @@ export function TrainingWorkspace({ data }: { data: TrainingData }) {
             variant={tab === value ? "default" : "outline"}
             aria-pressed={tab === value}
             onClick={() => {
+              setError("");
               setEditor(null);
               setTab(value);
             }}
@@ -123,7 +151,10 @@ export function TrainingWorkspace({ data }: { data: TrainingData }) {
               <h2 className="font-semibold">Reusable routines</h2>
               <Button
                 variant="outline"
-                onClick={() => setEditor(emptyRoutine())}
+                onClick={() => {
+                  setError("");
+                  setEditor(emptyRoutine());
+                }}
               >
                 <Plus size={15} />
                 Create routine
@@ -150,10 +181,22 @@ export function TrainingWorkspace({ data }: { data: TrainingData }) {
                     <Button disabled={pending} onClick={() => start(r.id)}>
                       Start workout <ArrowRight size={15} />
                     </Button>
+                    <Button asChild variant="outline">
+                      <Link
+                        href={`/calendar?kind=workout&template=${r.id}${planningDate ? `&date=${planningDate}` : ""}#schedule`}
+                        aria-label={`Schedule routine ${r.name}`}
+                      >
+                        <CalendarDays size={15} />
+                        Schedule
+                      </Link>
+                    </Button>
                     <Button
                       variant="outline"
                       disabled={pending}
-                      onClick={() => setEditor(r)}
+                      onClick={() => {
+                        setError("");
+                        setEditor(r);
+                      }}
                     >
                       Edit routine
                     </Button>
@@ -162,13 +205,10 @@ export function TrainingWorkspace({ data }: { data: TrainingData }) {
                       disabled={pending}
                       aria-label={`Duplicate ${r.name}`}
                       onClick={() =>
-                        startTransition(async () => {
-                          const result = await saveRoutineAction(
-                            duplicateRoutine(r),
-                          );
-                          if (!result.success) setError(result.error);
-                          else router.refresh();
-                        })
+                        perform(
+                          () => saveRoutineAction(duplicateRoutine(r)),
+                          () => router.refresh(),
+                        )
                       }
                     >
                       <Copy size={15} />
@@ -178,14 +218,10 @@ export function TrainingWorkspace({ data }: { data: TrainingData }) {
                       label="Delete routine"
                       pending={pending}
                       onConfirm={() =>
-                        startTransition(async () => {
-                          const result = await archiveRoutineAction(
-                            r.id,
-                            r.revision,
-                          );
-                          if (!result.success) setError(result.error);
-                          else router.refresh();
-                        })
+                        perform(
+                          () => archiveRoutineAction(r.id, r.revision),
+                          () => router.refresh(),
+                        )
                       }
                     />
                   </div>

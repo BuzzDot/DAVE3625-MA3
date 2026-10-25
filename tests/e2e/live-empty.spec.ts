@@ -44,6 +44,31 @@ test("a new account has real empty states, working pages and persisted timezone 
       await expect(
         page.getByText("No measurements logged for this date."),
       ).toBeVisible();
+    if (path === "/calendar") {
+      const date = await page.getByLabel("Calendar date").inputValue();
+      await expect(page.getByLabel("Workout routines")).toBeDisabled();
+      await expect(
+        page.getByRole("link", { name: "Open Workouts to create a routine" }),
+      ).toHaveAttribute("href", `/workouts?date=${date}`);
+      await expect(
+        page.getByRole("button", { name: "Preview schedule" }),
+      ).toBeDisabled();
+      await page.getByLabel("Activity type").selectOption("meal");
+      await expect(page.getByLabel("Saved meals")).toBeDisabled();
+      await expect(
+        page.getByRole("link", { name: "Open Nutrition to create a recipe" }),
+      ).toHaveAttribute("href", `/nutrition?date=${date}&view=meals`);
+      await expect(
+        page.getByRole("button", { name: "Save schedule" }),
+      ).toHaveCount(0);
+      await page
+        .getByRole("link", { name: "Open Nutrition to create a recipe" })
+        .click();
+      await expect(page.getByLabel("Nutrition date")).toHaveValue(date);
+      await expect(
+        page.getByRole("button", { name: "Saved meals", exact: true }),
+      ).toHaveAttribute("aria-pressed", "true");
+    }
     expect(
       await page.evaluate(
         () => document.documentElement.scrollWidth <= innerWidth,

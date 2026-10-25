@@ -133,7 +133,7 @@ test("health, recurrence, scheduled workout and meal persist across fresh deskto
     await page.getByLabel("Target", { exact: true }).fill("2000");
     await page.getByRole("button", { name: "Save health goal" }).click();
     await expect(page.getByText("Daily goal: 2,000 ml · 25%")).toBeVisible();
-    await page.getByLabel("Saved template").selectOption(ids.routine);
+    await page.getByLabel("Workout routines").selectOption(ids.routine);
     await page.getByLabel("Repeat weekly").check();
     await page.getByLabel("Mon", { exact: true }).check();
     await page.getByLabel("Wed", { exact: true }).check();
@@ -184,7 +184,7 @@ test("health, recurrence, scheduled workout and meal persist across fresh deskto
     );
     await page.goto(`/calendar?date=${date}`);
     await page.getByLabel("Activity type").selectOption("meal");
-    await page.getByLabel("Saved template").selectOption(ids.recipe);
+    await page.getByLabel("Saved meals").selectOption(ids.recipe);
     await page.getByRole("button", { name: "Preview schedule" }).click();
     await page
       .getByRole("button", { name: "Save schedule", exact: true })

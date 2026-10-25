@@ -1,6 +1,24 @@
 # Nutrition diary
 
+## Barcode lookup — local release addition, October 25, 2026
+
+Final release review corrected leading-zero barcode identity: equivalent UPC-A/EAN/GTIN encodings are accepted when the provider normalizes its returned code, while unrelated identities remain rejected. The entered code is retained and the source URL uses the provider's canonical code. Real desktop/mobile lookup-to-intake tests cover the 14-digit/13-digit equivalent; synthetic-camera browser tests cover video/track lifecycle and permission fallback with a simulated detector. Physical-device/Safari decoding is unverified. See [RELEASE_PREPARATION.md](RELEASE_PREPARATION.md) for the approval gate and exact verification scope.
+
+Food library now supports manual product codes and optional native camera decoding. An authenticated server action queries the fixed Open Food Facts v3 read endpoint; no API key or new environment variable is required. Product fields are cached for up to 24 hours with bounded request time and provider-failure feedback. Attribution/product links appear in the result. No images are downloaded/uploaded, and camera frames stay on the device. Native BarcodeDetector support is required for scanning; typed codes remain the fallback. HTTPS or localhost is required for camera access.
+
+Users review/correct a personal-food draft, save it, then separately confirm quantity/date/category in the existing logger. Only a confirmed mass-based product is mapped into the per-100-g model; 100 ml never becomes 100 g. Missing/invalid individual nutrients remain null; known zero is retained. Explicit kJ is converted by 4.184 only when kcal is absent. A serving is offered only when its label states grams explicitly.
+
+These are ordinary personal foods, not trusted shared imports. Provider/barcode/URL/retrieval information is editable description text; `source`/`external_id` remain governed by existing SQL guards. Re-scanning does not deduplicate/update personal copies, and structured immutable barcode evidence remains deferred. Existing SQL calculates intake and preserves historical basis; saving a food alone never adds calories. No migrations or dependencies were added. This request authorizes the feature and supersedes earlier deferred-scanning notes. Garmin and label OCR remain unimplemented. See [USER_GUIDE.md](USER_GUIDE.md) and [FINAL_QA.md](FINAL_QA.md); nothing was deployed.
+
 Phase 3 uses real Supabase Auth and persistence at `/nutrition`. The old fictional editor is available only at `/demo/nutrition`. Start with `npm run dev`, log in, and open Nutrition. Search a Norwegian food name such as `Havregryn`, choose **Log**, enter grams or a listed serving, select date/category, and save. Saved meals are recipes: define ingredients in grams, set the recipe yield in servings, save, and log any fraction of a serving when consumed.
+
+## Connected diary workflows (local iteration)
+
+Each diary meal category now has **Saved meal** beside its existing food-logging workflow. Selecting it carries that category and the current diary date into the normal portion editor; choose any saved recipe, review the amount/date/category, and save. The saved-meal library's general Log portion action initially uses lunch and thereafter the most recently chosen category in the current workspace. No consumption is created by selecting or scheduling a recipe.
+
+Saved-meal cards also have **Schedule**, opening Calendar with that recipe, meal activity type and selected diary date. Preview and explicit save remain required. Calendar's empty meal selector links directly to `/nutrition?date=<selected-date>&view=meals`, and the dashboard's **Choose a saved meal** opens today's saved library. Invalid dates/views fall back to the normal diary. These additions reuse verified owner-specific repositories and existing authenticated writes; they are not a new import or logging backend.
+
+Dashboard and Nutrition share calorie/protein/carbohydrate/fat cards with applicable dated targets, accessible progress bars and amounts remaining/above target. Displayed totals remain the full recorded amount even above a target; only the progress indicator is bounded. Missing nutrients show Unknown without invented progress. Dashboard's empty state remains explicit until intake is logged. These changes are local and have not been deployed.
 
 ## Calculations and historical integrity
 

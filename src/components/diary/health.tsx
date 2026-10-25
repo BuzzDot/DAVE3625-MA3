@@ -36,18 +36,18 @@ export function HealthSummary({
   date: string;
 }) {
   return (
-    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+    <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
       {["steps", "water", "sleep", "weight", "resting_heart_rate"].map(
         (code) => {
           const metric = data.metrics.find((m) => m.code === code);
           const actual = dailyMetric(data, code, date);
           const target = healthGoal(data, code, date);
           return (
-            <Card key={code} className="p-5">
+            <Card key={code} className="min-w-0 p-4 sm:p-5">
               <p className="text-sm text-muted-foreground">
                 {metricNames[code]}
               </p>
-              <p className="mt-2 text-2xl font-semibold">
+              <p className="mt-2 break-words text-xl font-semibold sm:text-2xl">
                 {actual === null
                   ? "Not logged"
                   : display(actual, ` ${metric?.unit ?? ""}`)}

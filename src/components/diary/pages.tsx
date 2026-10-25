@@ -6,7 +6,7 @@ import { CalendarWorkspace } from "./calendar";
 import { HealthDiary, HealthSummary } from "./health";
 import { Card } from "@/components/ui/card";
 import { PageHeading } from "@/components/page-heading";
-import { MacroLine } from "@/components/nutrition/fields";
+import { DailyNutritionTotals } from "@/components/nutrition/daily-totals";
 import {
   entryMacros,
   sumMacros,
@@ -14,7 +14,15 @@ import {
   localDate,
 } from "@/lib/nutrition/calculations";
 import { addDays, dailyMetric, wallTime } from "@/lib/diary/domain";
-export async function CalendarContent({ date }: { date?: string }) {
+export async function CalendarContent({
+  date,
+  initialKind,
+  initialTemplateId,
+}: {
+  date?: string;
+  initialKind?: "workout" | "meal";
+  initialTemplateId?: string;
+}) {
   const [diary, training, nutrition] = await Promise.all([
     loadDiaryData(),
     loadTrainingData(),
@@ -32,6 +40,8 @@ export async function CalendarContent({ date }: { date?: string }) {
         training={training}
         nutrition={nutrition}
         initialDate={date ?? nutrition.today}
+        initialKind={initialKind}
+        initialTemplateId={initialTemplateId}
       />
     </>
   );
@@ -72,6 +82,7 @@ export async function DashboardContent() {
   const date = nutrition.today;
   const entries = nutrition.entries.filter((e) => e.local_date === date);
   const goals = goalForDate(nutrition.goals, date);
+  const totals = sumMacros(entries.map(entryMacros));
   const upcoming = diary.activities
     .filter(
       (a) =>
@@ -101,7 +112,11 @@ export async function DashboardContent() {
           <p className="eyebrow">YOUR LIVE NUTRITION</p>
           <h2 className="mt-2 text-lg font-semibold">Today, on your plate.</h2>
           {entries.length ? (
-            <MacroLine values={sumMacros(entries.map(entryMacros))} />
+            <DailyNutritionTotals
+              className="mt-5"
+              totals={totals}
+              goal={goals}
+            />
           ) : (
             <p className="my-4 text-muted-foreground">
               No consumed meals logged today.
@@ -111,25 +126,23 @@ export async function DashboardContent() {
             {entries.length} consumed entries · {date}. Planned meals are
             excluded.
           </p>
-          {goals && (
+          {goals && !entries.length && (
             <p className="mt-3 text-sm">
               Targets: {goals.kcal} kcal · Protein {goals.protein_g} g · Carbs{" "}
               {goals.carbs_g} g · Fat {goals.fat_g} g
             </p>
           )}
-          {goals && entries.length > 0 && (
-            <p className="mt-2 text-sm">
-              Calories:{" "}
-              {sumMacros(entries.map(entryMacros)).kcal === null
-                ? "Unknown"
-                : `${Math.round((sumMacros(entries.map(entryMacros)).kcal! / goals.kcal) * 100)}% of target`}
-            </p>
-          )}
           <Link
             className="mt-3 inline-flex min-h-11 items-center text-primary underline"
-            href="/nutrition"
+            href={`/nutrition?date=${date}`}
           >
             Open nutrition diary
+          </Link>
+          <Link
+            className="ml-4 inline-flex min-h-11 items-center text-primary underline"
+            href={`/nutrition?date=${date}&view=meals`}
+          >
+            Choose a saved meal
           </Link>
         </Card>
         <Card>
@@ -159,7 +172,7 @@ export async function DashboardContent() {
             </p>
           )}
           <Link
-            className="inline-flex min-h-11 items-center text-primary underline"
+            className="mt-3 flex min-h-11 items-center text-primary underline"
             href="/workouts"
           >
             Open workouts

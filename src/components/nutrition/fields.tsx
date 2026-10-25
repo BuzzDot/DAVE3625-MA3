@@ -9,12 +9,7 @@ export const mealNames = {
   other: "Other",
 };
 export type Meal = keyof typeof mealNames;
-export const labels = {
-  kcal: "Calories",
-  protein: "Protein",
-  carbs: "Carbohydrates",
-  fat: "Fat",
-};
+export { macroLabels as labels } from "@/lib/nutrition/types";
 export function MacroLine({ values }: { values: Macros }) {
   return (
     <p className="mt-2 text-xs leading-6 text-muted-foreground">

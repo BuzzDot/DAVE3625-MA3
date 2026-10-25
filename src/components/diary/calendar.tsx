@@ -43,25 +43,30 @@ export function ScheduleForm({
   training,
   nutrition,
   onSaved,
+  initialKind = "workout",
+  initialTemplateId,
 }: {
   date: string;
   timezone: string;
   training: TrainingData;
   nutrition: NutritionData;
   onSaved: () => void;
+  initialKind?: "workout" | "meal";
+  initialTemplateId?: string;
 }) {
   const hydrated = useHydrated();
-  const [kind, setKind] = useState<"workout" | "meal">("workout");
+  const [kind, setKind] = useState<"workout" | "meal">(initialKind);
   const [preview, setPreview] = useState<ScheduleInput | null>(null);
   const [message, setMessage] = useState("");
   const [pending, start] = useTransition();
   const templates = kind === "workout" ? training.routines : nutrition.recipes;
   return (
-    <Card className="p-5">
+    <Card id="schedule" className="scroll-mt-5 p-5">
       <h2 className="text-lg font-semibold">Schedule an activity</h2>
       <p className="my-3 text-sm text-muted-foreground">
-        Plan from a saved routine or recipe. Up to one year / 366 occurrences
-        per series. Times use {timezone}; repeated clocks use standard time.
+        Choose a workout routine or a saved meal (recipe). Up to one year / 366
+        occurrences per series. Times use {timezone}; repeated clocks use
+        standard time.
       </p>
       <form
         key={`${date}-${kind}`}
@@ -113,9 +118,30 @@ export function ScheduleForm({
             </select>
           </label>
           <label className="sm:col-span-2">
-            Saved template
-            <select name="template" required>
-              <option value="">Choose a template</option>
+            {kind === "workout" ? "Workout routines" : "Saved meals"}
+            <select
+              name="template"
+              required
+              defaultValue={
+                kind === initialKind &&
+                templates.some((template) => template.id === initialTemplateId)
+                  ? initialTemplateId
+                  : ""
+              }
+              disabled={!templates.length}
+              aria-describedby={
+                !templates.length ? "schedule-template-help" : undefined
+              }
+            >
+              <option value="">
+                {templates.length
+                  ? kind === "workout"
+                    ? "Choose a workout routine"
+                    : "Choose a saved meal"
+                  : kind === "workout"
+                    ? "No workout routines yet"
+                    : "No saved meals yet"}
+              </option>
               {templates.map((t) => (
                 <option key={t.id} value={t.id}>
                   {t.name}
@@ -124,12 +150,25 @@ export function ScheduleForm({
             </select>
           </label>
           {!templates.length && (
-            <p className="sm:col-span-3 text-sm text-muted-foreground">
-              Create a{" "}
+            <p
+              id="schedule-template-help"
+              className="sm:col-span-3 text-sm text-muted-foreground"
+            >
               {kind === "workout"
-                ? "routine in Workouts"
-                : "recipe in Nutrition"}{" "}
-              first.
+                ? "No workout routines yet. In Workouts, choose Create routine and save it, then return to Calendar. Logging a workout does not create a reusable routine."
+                : "No saved meals yet. In Nutrition, open Saved meals, choose Create recipe and save it, then return to Calendar. Logging individual foods does not create a recipe."}
+              <Link
+                className="mt-2 flex min-h-11 items-center font-semibold text-primary underline"
+                href={
+                  kind === "workout"
+                    ? `/workouts?date=${date}`
+                    : `/nutrition?date=${date}&view=meals`
+                }
+              >
+                {kind === "workout"
+                  ? "Open Workouts to create a routine"
+                  : "Open Nutrition to create a recipe"}
+              </Link>
             </p>
           )}
           <label>
@@ -200,11 +239,18 @@ export function ScheduleForm({
             disabled={pending}
             onClick={() =>
               start(async () => {
-                const r = await createSchedule(preview);
-                setMessage(r.success ? "Schedule saved." : r.error);
-                if (r.success) {
-                  setPreview(null);
-                  onSaved();
+                setMessage("");
+                try {
+                  const r = await createSchedule(preview);
+                  setMessage(r.success ? "Schedule saved." : r.error);
+                  if (r.success) {
+                    setPreview(null);
+                    onSaved();
+                  }
+                } catch {
+                  setMessage(
+                    "Could not confirm the schedule. Your preview is still here. Check your connection and retry.",
+                  );
                 }
               })
             }
@@ -464,11 +510,15 @@ export function CalendarWorkspace({
   training,
   nutrition,
   initialDate,
+  initialKind,
+  initialTemplateId,
 }: {
   diary: DiaryData;
   training: TrainingData;
   nutrition: NutritionData;
   initialDate: string;
+  initialKind?: "workout" | "meal";
+  initialTemplateId?: string;
 }) {
   const router = useRouter();
   const hydrated = useHydrated();
@@ -693,6 +743,8 @@ export function CalendarWorkspace({
         timezone={timezone}
         training={training}
         nutrition={nutrition}
+        initialKind={initialKind}
+        initialTemplateId={initialTemplateId}
         onSaved={() => router.refresh()}
       />
       <HealthDiary key={date} data={diary} date={date} timezone={timezone} />

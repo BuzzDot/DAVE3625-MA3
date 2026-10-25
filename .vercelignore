@@ -10,6 +10,7 @@ tests
 scripts
 /supabase/
 .agents
+/skills-lock.json
 .claude
 .codex
 AGENTS.md

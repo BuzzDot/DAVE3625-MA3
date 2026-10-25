@@ -4,6 +4,26 @@
 
 Form is a private fitness diary with workout, nutrition, health, calendar, and future community modules. Read `docs/ARCHITECTURE.md` and `docs/PLAN.md` before substantial work. Update both when decisions or delivery status change. Never describe demo UI, planned work, or unconnected services as completed production features.
 
+## Default autonomous MVP workflow
+
+- Deliver a functional, usable assignment MVP first. Prioritize explicit assignment requirements and broken core user journeys over optional features, architectural perfection, extensive redesigns or premature optimization.
+- Make routine technical and implementation decisions independently. Continue through implementation, verification and fixes without asking for approval between ordinary development steps. Ask only when required information or authorization is genuinely missing.
+- Preserve working behavior and existing changes. Accept reasonable technical debt when it helps delivery; document significant compromises and remaining limits. Keep the experience intuitive, responsive and reasonably polished without spending excessive time on cosmetics.
+- Authentication, authorization, user-data isolation and sensitive-information protection are mandatory, including for a prototype.
+- Barcode lookup with manual entry and optional native camera decoding is explicitly authorized for the current release. Garmin integration and nutrition-label OCR remain future enhancements. Meal-photo macro estimation is excluded. Do not implement deferred integrations or deploy as part of an ordinary development cycle without applicable explicit authorization.
+
+For every development task, unless its scope explicitly requires otherwise:
+
+1. **Understand:** Inspect relevant code, assignment requirements and project documentation. If original assignment material is unavailable, state that limitation and use the documented acceptance criteria without inventing requirements.
+2. **Plan:** Identify necessary changes and their impact, with planning proportional to complexity.
+3. **Implement:** Make the required changes autonomously, keeping the scope practical for the MVP.
+4. **Test:** Run applicable automated checks, including the verification commands below; use appropriate API/integration tests for backend changes.
+5. **Inspect and interact:** Start or access the app with available browser automation. Exercise affected user journeys through real clicks, form input and observable results, including representative desktop/mobile layouts for UI changes. Inspect browser errors and failed requests when supported. Screenshots and builds alone do not establish end-to-end functionality.
+6. **Fix and reverify:** Resolve important failures, regressions and usability problems, then repeat the relevant automated and browser checks.
+7. **Document:** Update delivery status and relevant documentation. Summarize implemented changes, checks, limitations, significant accepted debt and next priorities. Distinguish browser-interaction evidence, automated-only evidence and unverified behavior.
+
+Browser verification is standard for UI, navigation, forms, authentication and user-workflow changes. Backend-only work may use API/integration checks when browser testing adds no value. If browser automation or credentials are unavailable, report that explicitly; never claim skipped or unperformed visual/end-to-end checks passed. Use dedicated authorized test accounts and safe test data, preserving real user records.
+
 ## Stack and conventions
 
 - Next.js App Router, strict TypeScript, React, Tailwind CSS v4, shadcn/ui conventions, Recharts, Supabase Auth/PostgreSQL. Keep the lockfile and use compatible stable versions.
@@ -29,6 +49,7 @@ Form is a private fitness diary with workout, nutrition, health, calendar, and f
 ## Verification and handoff
 
 - Run `npm run lint`, `npm run typecheck`, `npm test`, `npm run test:ui`, and `npm run build`. Run `npm run test:e2e` for UI changes when Chromium is available. Run `npm run test:postgres` for schema changes when native PostgreSQL binaries are available; `db:types` introspects that isolated migrated cluster. Real Supabase verification uses `test:supabase` and the conditional browser workflow with dedicated confirmed test accounts.
+- Finish builds before starting browser-test servers. Never rebuild or replace `.next` while a verification server is using that output. `test:hosted` runs the production build, real API checks and the same Playwright suite with disposable credentials; use it for complete authenticated verification when the linked test tooling is available.
 - Add meaningful tests for domain invariants, authorization, and user-visible interactions; avoid tests that merely reproduce implementation details.
 - Do not run destructive resets against a remote database. Local Supabase reset instructions apply only to the isolated local stack.
 - Document checks, limitations, configuration, blockers, completed work, and the next phase. Keep routine implementation decisions autonomous. Hosted inspection and forward migration application are authorized for Phase 2 verification; never reset hosted data.

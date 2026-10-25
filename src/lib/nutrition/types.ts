@@ -58,6 +58,12 @@ export type NutrientMap = Record<
   { amount: number | null; unit: string }
 >;
 export const macroKeys = ["kcal", "protein", "carbs", "fat"] as const;
+export const macroLabels = {
+  kcal: "Calories",
+  protein: "Protein",
+  carbs: "Carbohydrates",
+  fat: "Fat",
+};
 export function portions(value: Json): Portion[] {
   return Array.isArray(value)
     ? value.filter(

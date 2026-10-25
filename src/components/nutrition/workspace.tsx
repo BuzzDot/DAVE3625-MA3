@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useHydrated } from "@/lib/use-hydrated";
@@ -9,6 +10,7 @@ import {
   Star,
   Utensils,
   Leaf,
+  CalendarDays,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -31,7 +33,6 @@ import {
   goalForDate,
 } from "@/lib/nutrition/calculations";
 import {
-  macroKeys,
   portions,
   type NutritionData,
   type Food,
@@ -41,19 +42,23 @@ import {
   type Entry,
 } from "@/lib/nutrition/types";
 import { NutritionHistory } from "./history";
-import { MacroLine, mealNames, labels, type Meal } from "./fields";
+import { MacroLine, mealNames, type Meal } from "./fields";
 import { FoodSearch } from "./food-library";
 import { FoodEditor, RecipeEditor, LogEditor, GoalEditor } from "./editors";
+import { DailyNutritionTotals } from "./daily-totals";
+import { BarcodeLookup } from "./barcode-lookup";
 export function NutritionWorkspace({
   data,
   initialDate,
+  initialTab = "Diary",
 }: {
   data: NutritionData;
   initialDate?: string;
+  initialTab?: "Diary" | "Saved meals";
 }) {
   const router = useRouter();
   const hydrated = useHydrated();
-  const [tab, setTab] = useState("Diary");
+  const [tab, setTab] = useState<string>(initialTab);
   const [date, setDate] = useState(
     initialDate &&
       /^\d{4}-\d{2}-\d{2}$/.test(initialDate) &&
@@ -65,6 +70,7 @@ export function NutritionWorkspace({
   const [error, setError] = useState("");
   const [status, setStatus] = useState("");
   const [defaultMeal, setDefaultMeal] = useState<Meal>("breakfast");
+  const [recipeMeal, setRecipeMeal] = useState<Meal>("lunch");
   const [foodEditor, setFoodEditor] = useState<FoodInput | null>(null);
   const [recipeEditor, setRecipeEditor] = useState<Recipe | null>(null);
   const [logger, setLogger] = useState<{
@@ -169,50 +175,7 @@ export function NutritionWorkspace({
         </Button>
         <span className="text-xs text-muted-foreground">{data.timezone}</span>
       </div>
-      <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
-        {macroKeys.map((k) => {
-          const target = goal
-            ? {
-                kcal: goal.kcal,
-                protein: goal.protein_g,
-                carbs: goal.carbs_g,
-                fat: goal.fat_g,
-              }[k]
-            : null;
-          return (
-            <Card key={k} className={k === "kcal" ? "bg-[#edf1e8]" : ""}>
-              <p className="eyebrow">{labels[k]}</p>
-              <p
-                className="mt-3 text-2xl font-semibold"
-                data-testid={`daily-${k}`}
-              >
-                {display(totals[k], k === "kcal" ? "" : " g")}
-              </p>
-              <p className="mt-2 text-xs text-muted-foreground">
-                {target === null
-                  ? "No target set"
-                  : `of ${display(target, k === "kcal" ? " kcal" : " g")}`}
-              </p>
-              {target !== null && target > 0 && totals[k] !== null && (
-                <progress
-                  className="mt-3 h-2 w-full accent-[#64794e]"
-                  aria-label={`${labels[k]} goal progress`}
-                  value={Math.min(totals[k]!, target)}
-                  max={target}
-                />
-              )}
-            </Card>
-          );
-        })}
-      </div>
-      {entries.some((e) =>
-        macroKeys.some((k) => entryMacros(e)[k] === null),
-      ) && (
-        <p className="mb-4 text-sm text-amber-800">
-          Some nutrient values are unavailable. Affected totals are shown as
-          Unknown, rather than counting missing data as zero.
-        </p>
-      )}
+      <DailyNutritionTotals totals={totals} goal={goal} className="mb-6" />
       <nav
         aria-label="Nutrition sections"
         className="mb-6 flex flex-wrap gap-2"
@@ -329,6 +292,22 @@ export function NutritionWorkspace({
                           .map(entryMacros),
                       )}
                     />
+                    <Button
+                      variant="outline"
+                      className="mt-3"
+                      aria-label={`Log saved meal for ${label.toLowerCase()}`}
+                      onClick={() => {
+                        setTab("Saved meals");
+                        setLogger(null);
+                        setRecipeMeal(meal);
+                        setError("");
+                        setStatus(
+                          `Choose a saved meal for ${label.toLowerCase()} on ${date}.`,
+                        );
+                      }}
+                    >
+                      <Utensils size={15} /> Saved meal
+                    </Button>
                   </Card>
                 ),
               )}
@@ -354,6 +333,7 @@ export function NutritionWorkspace({
                 Create food
               </Button>
             </div>
+            <BarcodeLookup onDraft={setFoodEditor} />
             {foodEditor && (
               <FoodEditor
                 value={foodEditor}
@@ -497,12 +477,20 @@ export function NutritionWorkspace({
                     <div className="mt-4 flex flex-wrap gap-2">
                       <Button
                         onClick={() => {
-                          setLogger({ recipe, meal: "lunch" });
+                          setLogger({ recipe, meal: recipeMeal });
                           window.scrollTo({ top: 0, behavior: "smooth" });
                         }}
                         aria-label={`Log recipe ${recipe.name}`}
                       >
                         Log portion
+                      </Button>
+                      <Button asChild variant="outline">
+                        <Link
+                          href={`/calendar?date=${date}&kind=meal&template=${recipe.id}#schedule`}
+                          aria-label={`Schedule recipe ${recipe.name}`}
+                        >
+                          <CalendarDays size={15} /> Schedule
+                        </Link>
                       </Button>
                       <Button
                         variant="outline"

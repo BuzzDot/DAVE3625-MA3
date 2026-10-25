@@ -2,6 +2,10 @@
 
 A responsive fitness diary with health tracking, calendar scheduling, Supabase authentication, persistent workouts, reusable routines/recipes, a Norwegian food library, macro goals, historical snapshots and progress charts. Built with Next.js App Router, TypeScript, Tailwind CSS, shadcn-style UI primitives, Supabase, and Recharts.
 
+**Local release preparation — October 25, 2026:** Food library now includes Open Food Facts barcode lookup, manual entry and optional native camera scanning. Review/save a personal food, then confirm its consumed quantity in the existing logger. No additional environment variables, dependencies or migrations are needed. These and the earlier uncommitted diary improvements remain local; the existing deployed release is unchanged. See the [user guide](docs/USER_GUIDE.md) and [final QA report](docs/FINAL_QA.md) for evidence and release limits.
+
+The reviewed [release candidate](docs/RELEASE_PREPARATION.md) is ready for publication approval. Review fixed equivalent leading-zero barcodes and added browser coverage with a synthetic camera/decoder; physical-camera and Safari verification remain outstanding. GitHub `main` is the release branch. Pushing does not automatically deploy this Vercel project; a separately approved explicit deployment and production smoke check are required.
+
 **Private diaries need a configured, migrated Supabase project or local stack.** Without one, private pages show setup instructions and authentication stays disabled. Workouts, nutrition, health, dashboard and calendar use actual persisted records. Community remains a labeled demo. Legacy previews live under `/demo/dashboard`, `/demo/calendar`, `/demo/workouts`, `/demo/progress` and `/demo/nutrition`. No live request silently falls back to demo data. Hosted Supabase authentication, persistence, and isolation verification has passed alongside the independent PostgreSQL tests.
 
 ## Run locally
@@ -59,6 +63,8 @@ The configured hosted Supabase project is migrated through 009, the 2,121-food N
 - `docs/SETUP.md`: exact local/hosted configuration and real test-account instructions.
 - `docs/HEALTH-CALENDAR.md`: health logging, goals, recurrence, DST, fulfillment and limits.
 - `docs/NUTRITION.md`: nutrition calculations, snapshots, trusted food imports and limitations.
+- `docs/USER_GUIDE.md`: sign-in, workouts, nutrition/barcodes, health, calendar and progress walkthrough.
+- `docs/FINAL_QA.md`: current local release verification, feature classifications and remaining submission checks.
 - `src/app`: App Router pages, shared layout, CSS, error/loading states.
 - `src/components`: responsive shell, dashboard, module demos, charts, reusable UI primitives.
 - `src/lib/demo`: isolated fictional fixtures.
@@ -71,8 +77,16 @@ The configured hosted Supabase project is migrated through 009, the 2,121-food N
 
 ## Dependency security
 
-The initial audit reports no production vulnerabilities. The development lint chain has a `braces` stack-exhaustion advisory via Next's ESLint plugin and `fast-glob`; the registry currently has no patched compatible `braces` release. Do not apply npm's suggested major downgrade to Next's lint config. Only trusted local repository paths are linted. Recheck `npm audit` and upgrade the lint chain when a compatible fix is available. This tooling advisory remains an open maintenance item.
+The October 25 audits (`npm audit` and `npm audit --omit=dev`) report zero vulnerabilities for the current lockfile, including development dependencies. This supersedes the earlier development-only lint-chain advisory. No dependency upgrade or automatic audit fix was needed. Recheck the audit before a future release; results are time-dependent.
+
+## Release limits
+
+Barcode camera decoding requires a browser with native `BarcodeDetector`, camera permission and HTTPS (or localhost). Manual code entry works without a camera. Open Food Facts may have missing/stale products; verify the package label. Only confirmed gram-based labels are supported; unknown nutrients stay unknown. Saved results are editable personal foods with attribution in their description, not trusted shared imports. Repeated scans do not update/deduplicate personal copies; historical intake retains its recorded basis. See [nutrition rules](docs/NUTRITION.md).
+
+Garmin import/sync is not implemented: no representative daily-steps export was available to validate, and the optional stretch goal was skipped. Community remains a demo. OCR, password recovery and account export/deletion remain unimplemented. Public email confirmation still needs a fresh real-inbox retest; generated/administratively confirmed test accounts do not verify mail delivery.
+
+Vercel configuration uses Node 24 and a normal server-rendered Next.js build. Keep the three public variables from `.env.example` aligned with Supabase Auth's production origin/redirect allowlist; never add administrative secrets to `NEXT_PUBLIC_*`. Barcode lookup only adds outbound HTTPS access to Open Food Facts. Local changes require approval before commit, push or deployment, followed by acceptance against the new deployed release. See [deployment instructions](docs/DEPLOYMENT.md).
 
 ## Assignment deployment
 
-Live application: [Form on Vercel](https://form-dave3625-ma3.vercel.app), corrected release `3cc9c25`. Independent production acceptance passed three API scenarios and 28 desktop/mobile browser cases. Dedicated confirmation regression passed locally and on production desktop/mobile using generated links. New emails use `/auth/confirm`, which clears URL tokens and verifies email status with Supabase before success. Real inbox confirmation needs a fresh manual retest; existing authorized accounts are the chosen demonstration setup. See [DEPLOYMENT.md](docs/DEPLOYMENT.md) for results/limits and [SUBMISSION.md](docs/SUBMISSION.md) for assignment details, AI disclosure and demonstration steps. Community, scanning and wearable synchronization remain deferred.
+Live application: [Form on Vercel](https://form-dave3625-ma3.vercel.app), corrected release `3cc9c25`. Its earlier independent production acceptance passed three API scenarios and 28 desktop/mobile browser cases. Dedicated confirmation regression passed locally and on production desktop/mobile using generated links. New emails use `/auth/confirm`, which clears URL tokens and verifies email status with Supabase before success. Real inbox confirmation needs a fresh manual retest; existing authorized accounts are the chosen demonstration setup. See [DEPLOYMENT.md](docs/DEPLOYMENT.md) for results/limits. Barcode lookup and the local diary improvements have not been deployed; the new local acceptance results are in [FINAL_QA.md](docs/FINAL_QA.md). Community and wearable synchronization remain deferred.

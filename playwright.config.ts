@@ -25,7 +25,7 @@ export default defineConfig({
   reporter: "list",
   expect: { timeout: 15000 },
   use: {
-    baseURL: remoteTarget ?? "http://localhost:3100",
+    baseURL: remoteTarget ?? "http://127.0.0.1:3100",
     trace: remoteTarget ? "off" : "retain-on-failure",
   },
   projects: [
@@ -44,8 +44,8 @@ export default defineConfig({
   webServer: remoteTarget
     ? undefined
     : {
-        command: "npm run start -- --port 3100",
-        url: "http://localhost:3100",
+        command: "npm run start -- --hostname 127.0.0.1 --port 3100",
+        url: "http://127.0.0.1:3100",
         reuseExistingServer: false,
         timeout: 120000,
       },

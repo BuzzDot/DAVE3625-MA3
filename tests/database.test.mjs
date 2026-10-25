@@ -236,13 +236,19 @@ test("calendar recurrence, DST, exceptions, snapshots, atomic workout and meal f
   ]);
   const occurrences = (
     await db.query(
-      "select *,scheduled_at::text from public.scheduled_activities where rule_id=$1 order by occurrence_date",
+      "select * from public.scheduled_activities where rule_id=$1 order by occurrence_date",
       [ruleId],
     )
   ).rows;
   assert.equal(occurrences.length, 3);
-  assert.match(occurrences[0].scheduled_at, /07:00:00/);
-  assert.match(occurrences[1].scheduled_at, /08:00:00/);
+  assert.equal(
+    new Date(occurrences[0].scheduled_at).toISOString(),
+    "2026-10-23T07:00:00.000Z",
+  );
+  assert.equal(
+    new Date(occurrences[1].scheduled_at).toISOString(),
+    "2026-10-30T08:00:00.000Z",
+  );
   assert.equal(
     (
       await db.query(
@@ -651,12 +657,12 @@ test("nutrition snapshots survive food edits", async () => {
 test("imports deduplicate per owner, source, external ID and metric", async () => {
   await asUser(alice);
   const sql =
-    "insert into public.health_observations(owner_id,metric_code,value,observed_at,local_date,timezone,source,external_id) values ($1,'steps',7000,now(),'2026-10-16','Europe/Oslo','garmin','activity-1')";
+    "insert into public.health_observations(owner_id,metric_code,value,observed_at,local_date,timezone,source,external_id) values ($1,'steps',7000,'2026-10-16T12:00:00Z','2026-10-16','Europe/Oslo','garmin','activity-1')";
   await db.query(sql, [alice]);
   await assert.rejects(db.query(sql, [alice]), /unique constraint/);
   await assert.rejects(
     db.query(
-      "insert into public.health_observations(owner_id,metric_code,value,observed_at,local_date,timezone) values ($1,'heart_rate',500,now(),'2026-10-16','Europe/Oslo')",
+      "insert into public.health_observations(owner_id,metric_code,value,observed_at,local_date,timezone) values ($1,'heart_rate',500,'2026-10-16T12:00:00Z','2026-10-16','Europe/Oslo')",
       [alice],
     ),
     /accepted range/,

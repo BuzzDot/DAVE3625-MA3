@@ -58,6 +58,14 @@ test("real login, routine creation, saved sets, fresh-session history and logout
     const routine = page
       .locator("section")
       .filter({ has: page.getByRole("heading", { name, exact: true }) });
+    await expect(routine).toBeVisible();
+    await page.goto("/calendar");
+    await page.getByLabel("Workout routines").selectOption({ label: name });
+    await page.getByRole("button", { name: "Preview schedule" }).click();
+    await expect(
+      page.getByRole("button", { name: "Save schedule", exact: true }),
+    ).toBeVisible();
+    await page.goto("/workouts");
     await routine
       .getByRole("button", { name: "Start workout", exact: true })
       .click();

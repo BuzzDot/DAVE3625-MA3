@@ -21,7 +21,11 @@ export function RoutineEditor({
   const [error, setError] = useState("");
   const [pending, startTransition] = useTransition();
   return (
-    <div className="space-y-5">
+    <fieldset
+      disabled={pending}
+      aria-busy={pending}
+      className="min-w-0 space-y-5"
+    >
       <Card>
         <div className="flex items-center justify-between gap-3">
           <h2 className="font-semibold">
@@ -85,19 +89,26 @@ export function RoutineEditor({
               setError(validationMessage(parsed.error));
               return;
             }
+            setError("");
             startTransition(async () => {
-              const result = await saveRoutineAction(parsed.data);
-              if (!result.success) {
-                setError(result.error);
-                return;
+              try {
+                const result = await saveRoutineAction(parsed.data);
+                if (!result.success) {
+                  setError(result.error);
+                  return;
+                }
+                onClose();
+              } catch {
+                setError(
+                  "Could not confirm the save. Your edits are still here. Check your connection and retry.",
+                );
               }
-              onClose();
             });
           }}
         >
           {pending ? "Saving…" : "Save routine"}
         </Button>
       </div>
-    </div>
+    </fieldset>
   );
 }
